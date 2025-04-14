@@ -15,6 +15,7 @@ int main() {
     vector<double> B = mat(n,p,expmin,expmax);
     vector<double> A8 = split4pd(A);
     vector<double> B8 = split4pd(B);
+    cout << "A,B in R^{" << n << "x" << n << "}, entries of "<< p << "-doubles\nTiles of size " << nfrag << "\n\n";
     
     vector<double> C1 = zeros(n,4*p);
     flatTCKernel(A8,B8,C1,n,4*p);
