@@ -6,7 +6,14 @@
 
 /*
 Assume matrices have a flat representation by default
+mat(n,p) returns a flattened nxn matrix of random p doubles
 */
+vector<double> mat(int n, int p, int expmin=0, int expmax=0);
+
+/*
+zeros(n,p) returns a matrix of all 0's
+*/
+vector<double> zeros(int n, int p);
 
 /*
 C++ doesn't seem to have nice slicing like in Julia, so matslice(A,ind) is a stand-in for A[ind]
@@ -68,8 +75,12 @@ void flatmul_fragments(vector<double> A, vector<double> B, vector<double> &C, in
 /*
 flatmatconv(A,B,C,n,p,f) uses matrix covolutions to compute A*B and fills it to C
 */
-void flatmatconvhelp1(vector<double> A, vector<double> B, vector<double> &C, int n, int p, int i, int j, int k, function<void(vector<double>,vector<double>,vector<double>,int,int)> f);
-void flatmatconvhelp2(vector<double> A, vector<double> B, vector<double> &C, int n, int p, int k, function<void(vector<double>,vector<double>,vector<double>,int,int)> f);
-void flatmatconv(vector<double> A, vector<double> B, vector<double> &C, int n, int p, function<void(vector<double>,vector<double>,vector<double>,int,int)> f);
+void flatmatconvhelp1(vector<double> A, vector<double> B, vector<double> &C, int n, int p, int i, int j, int k);
+void flatmatconvhelp2(vector<double> A, vector<double> B, vector<double> &C, int n, int p, int k);
+void flatmatconv(vector<double> A, vector<double> B, vector<double> &C, int n, int p);
 
+/*
+max_err(A,B) returns the maximum error between A and B
+*/
+double max_err(vector<double> A,vector<double> B);
 #endif
