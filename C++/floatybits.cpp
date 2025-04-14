@@ -5,7 +5,7 @@ val_bits(bits) parses an array or vector of bits and returns the numerical value
 */
 int val_bits(vector<int> bits) {
     int s = 0;
-    for (size_t i=0;i<bits.size();i++)
+    for (int i=0;i<bits.size();i++)
         s = 2*s+bits[i];
     return s;
 }
@@ -76,7 +76,7 @@ vector<int> random_double_bits(int signbit,int exponent) {
     vector<int> expbits = expandexpbits(exponent);
     bits.insert(bits.end(),expbits.begin(),expbits.end());
     vector<int> fracbits;
-    for (size_t i=0;i<52;i++) {
+    for (int i=0;i<52;i++) {
         fracbits.push_back(rand()%2);
     }
     bits.insert(bits.end(),fracbits.begin(),fracbits.end());
@@ -91,19 +91,25 @@ double double_rep(vector<int> bits) {
     expbits.insert(expbits.end(),bits.begin()+1,bits.begin()+12);
     int exponent = val_bits(expbits)-1023;
     double fraction = 0;
-    for (size_t i=1;i<=52;i++) {
+    for (int i=1;i<=52;i++) {
         fraction += pow(2.0,-i)*bits[11+i];
     }
-    return pow(-1.0,bits[0])*fraction*pow(2.0,exponent);
+    double signbit = bits[0];
+    return pow(-1.0,signbit)*fraction*pow(2.0,exponent);
 }
 
 /*
 random_pd(expmin,expmax) returns a random p-double
 */
-vector<double> random_pd(int expmin,int expmax,int p=2) {
-    int hiexp = expmin+1023+rand()%(expmax-expmin);
+vector<double> random_pd(int expmin,int expmax,int p) {
+    int hiexp;
+    if (expmax==expmin) {
+        hiexp = expmin+1023;
+    } else {
+        hiexp = expmin+1023+rand()%(expmax-expmin);
+    }
     vector<double> parts;
-    for (size_t i=0;i<p;i++) {
+    for (int i=0;i<p;i++) {
         vector<int> bits = random_double_bits(0,hiexp-52*i);
         parts.push_back(double_rep(bits));
     }
@@ -117,7 +123,7 @@ vector<double> split4(vector<int> bits) {
     vector<int> bits1 = bits;
     vector<int> bits2 = bits;
     vector<int> bits3 = bits;
-    for (size_t i=0;i<52;i++) {
+    for (int i=0;i<52;i++) {
         if (i<13) {
             bits2[11+i] = 0;
             bits3[11+i] = 0;
@@ -147,7 +153,7 @@ split4pd(x) applies split4 to a p-double x then returns the combined 4p-double
 */
 vector<double> split4pd(vector<double> x) {
     vector<double> x4;
-    for (size_t i=0;i<x.size();i++) {
+    for (int i=0;i<x.size();i++) {
         vector<double> xi4 = split4(bitform(x[i]));
         x4.insert(x4.end(),xi4.begin(),xi4.end());
     }
