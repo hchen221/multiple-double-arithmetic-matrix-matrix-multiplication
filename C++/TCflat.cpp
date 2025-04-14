@@ -1,15 +1,37 @@
 #include "TCflat.h"
+#include "floatybits.h"
 
 /*
 Assume matrices have a flat representation by default
+mat(n,p) returns a flattened nxn matrix of random p doubles
 */
+vector<double> mat(int n, int p, int expmin, int expmax) {
+    vector<double> A;
+    for (int i=0;i<n*n;i++) {
+        vector<double> Ai = random_pd(expmin,expmax,p);
+        A.insert(A.end(),Ai.begin(),Ai.end());
+    }
+    return A;
+}
+
+/*
+zeros(n,p) returns an nxn matrix of p-double entries with all 0's
+*/
+vector<double> zeros(int n, int p) {
+    vector<double> A;
+    for (int i=0;i<n*n*p;i++) {
+        A.push_back(0);
+    }
+    return A;
+}
+
 
 /*
 C++ doesn't seem to have nice slicing like in Julia, so matslice(A,ind) is a stand-in for A[ind]
 */
 vector<double> matslice(vector<double> A,vector<int> ind) {
     vector<double> A_sub;
-    for (size_t i=0;i<ind.size();i++) {
+    for (int i=0;i<ind.size();i++) {
         A_sub.push_back(A[ind[i]]);
     }
     return A_sub;
@@ -53,7 +75,7 @@ vector<int> row(int n, int p, int i) {
 vector<int> rowslice(int n, int p, int i, int j1, int j2) {
     vector<int> ind1 = row(n,p,i);
     vector<int> ind;
-    for (int k=j1*p;k<=j2*p-1;k++) {
+    for (int k=j1*p;k<=(j2+1)*p-1;k++) {
         ind.push_back(k);
     }
     return ind;
@@ -110,7 +132,7 @@ void flatdotapply(vector<double> A, vector<double> B, vector<double> &C, int n, 
     vector<int> ind = ent(n,p,i,j);
     vector<double> Cij = flatmyconv(matslice(A,row(n,p,i)),matslice(B,col(n,p,j)),p);
     for (int k=0;k<ind.size();k++) {
-        C[ind[k]] += Cij[ind[k]];
+        C[ind[k]] += Cij[k];
     }
 }
 void flatTCKernel(vector<double> A, vector<double> B, vector<double> &C, int n, int p) {
@@ -164,25 +186,36 @@ void flatmul_fragments(vector<double> A, vector<double> B, vector<double> &C, in
 /*
 flatmatconv(A,B,C,n,p,f) uses matrix covolutions to compute A*B and fills it to C
 */
-void flatmatconvhelp1(vector<double> A, vector<double> B, vector<double> &C, int n, int p, int i, int j, int k, function<void(vector<double>,vector<double>,vector<double>,int,int)> f) {
+void flatmatconvhelp1(vector<double> A, vector<double> B, vector<double> &C, int n, int p, int i, int j, int k) {
     vector<double> Ai = part(A,i,p);
     vector<double> Bj = part(B,j,p);
-    vector<double> Ck;
-    for (int l=0;l<Ai.size();l++) {
-        Ck.push_back(0);
-    }
-    f(Ai,Bj,Ck,n,1);
+    vector<double> Ck = zeros(Ai.size(),1);
+    flatTCKernel(Ai,Bj,Ck,n,1);
     for (int l=0;l<Ai.size();l++) {
         C[k+l*p] += Ck[l];
     }
 }
-void flatmatconvhelp2(vector<double> A, vector<double> B, vector<double> &C, int n, int p, int k, function<void(vector<double>,vector<double>,vector<double>,int,int)> f) {
+void flatmatconvhelp2(vector<double> A, vector<double> B, vector<double> &C, int n, int p, int k) {
     for (int i=0;i<k;i++) {
-        flatmatconvhelp1(A,B,C,n,p,i,k-1-i,k,f);
+        flatmatconvhelp1(A,B,C,n,p,i,k-1-i,k);
     }
 }
-void flatmatconv(vector<double> A, vector<double> B, vector<double> &C, int n, int p, function<void(vector<double>,vector<double>,vector<double>,int,int)> f) {
+void flatmatconv(vector<double> A, vector<double> B, vector<double> &C, int n, int p) {
     for (int k=0;k<p;k++) {
-        flatmatconvhelp2(A,B,C,n,p,k,f);
+        flatmatconvhelp2(A,B,C,n,p,k);
     }
+}
+
+/*
+max_err(A,B) returns the maximum error between A and B
+*/
+double max_err(vector<double> A,vector<double> B) {
+    double eps = 0;
+    for (int i=0;i<A.size();i++) {
+        double eps2 = abs(A[i]-B[i]);
+        if (eps2 > eps) {
+            eps = eps2;
+        }
+    }
+    return eps;
 }
