@@ -6,27 +6,13 @@ using namespace std;
 
 int main() {
     int p = 2;
-    int n = 16;
-    int nfrag = 4;
+    int n = 64;
+    int nfrag = 8;
     int expmin = 0;
     int expmax = 0;
-    
+
     vector<double> A = mat(n,p,expmin,expmax);
     vector<double> B = mat(n,p,expmin,expmax);
-    /*
-    for (int i=0; i<n*n; i++) {
-        if (i%n==0) {
-            cout << endl;
-        }
-        cout << "(";
-        for (int j=0; j<p; j++) {
-            cout << A[i*n+j] << ",";
-        }
-        cout << ") ";
-    }
-
-    return 0;
-    */
     vector<double> A8 = split4pd(A);
     vector<double> B8 = split4pd(B);
     
