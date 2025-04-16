@@ -42,7 +42,7 @@ double double_rep(vector<int> bits);
 /*
 random_pd(expmin,expmax) returns a random p-double
 */
-vector<double> random_pd(int expmin,int expmax,int p=2);
+vector<double> random_pd(int expmin,int expmax,int p);
 
 /*
 split4(bits) takes a 64 bit representation on input and returns the quad double in numerical form
