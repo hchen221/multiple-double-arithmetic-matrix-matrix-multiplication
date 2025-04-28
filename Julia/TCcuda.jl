@@ -45,7 +45,7 @@ matconv!(A,B,C,n,p) computes A*B and adds it to C, where A,B,C are nxn matrices 
 """
 function matconv!(A,B,C,n,p)
     function matconvhelp1(i,j)
-        Cbuffer = CUDA.zeros(n^2)
+        Cbuffer = CUDA.zeros(Float64,n^2)
         @cuda threads=(n,n) blocks=(1,1) matmul!(A[i:p:end],B[j:p:end],Cbuffer)
         return Cbuffer
     end
