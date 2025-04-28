@@ -26,7 +26,7 @@ function test_pd_matrix(p=2,n=256,expmin=0,expmax=0)
     end
     I,J = meshgrid(n)
     t0 = time()
-    sampleTCK2!.(Ref(fA),Ref(fB),Ref(fCc1),Ref(n),Ref(4*p),I,J)
+    sampleTCK!.(Ref(fA),Ref(fB),Ref(fCc1),Ref(n),Ref(4*p),I,J)
     t_CU = time()-t0
     print("For direct inner product convolutions:\n    Vectorization took $t_TCK seconds\n    CUDA took $t_CU seconds\n    err=$(maximum(abs.(fCc1-fC1)))\n")
 
@@ -37,7 +37,7 @@ function test_pd_matrix(p=2,n=256,expmin=0,expmax=0)
     flatmatconv!(fA,fB,fC2,n,4*p,flatTCKernel!)
     t_TCK2 = time()-t0
     t0 = time()
-    matconv!(fA,fB,fCc2,fCbuffer,n,4*p)
+    matconv!(fA,fB,fCc2,n,4*p)
     t_CU2 = time()-t0
     print("For matrix convolutions:\n    Vectorization took $t_TCK2 seconds\n    CUDA took $t_CU2 seconds\n    err=$(maximum(abs.(Array(fCc2)-fC2)))\n")
 
