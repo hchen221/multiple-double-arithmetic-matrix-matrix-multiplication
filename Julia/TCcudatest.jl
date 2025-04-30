@@ -27,13 +27,12 @@ function test_pd_matrix(p=2,n=256,expmin=0,expmax=0)
     print("For direct inner product convolutions:\n    Vectorization took $t_TCK seconds\n    CUDA took $t_CU seconds\n    err=$(maximum(abs.(Array(fCc1)-fC1)))\n")
 
     fC2 = zeros(Float64,n^2*4*p)
-    fCbuffer = CUDA.zeros(Float64,n^2)
     fCc2 = CuArray(fC2)
     t0 = time()
     flatmatconv!(fA,fB,fC2,n,4*p,flatTCKernel!)
     t_TCK2 = time()-t0
     t0 = time()
-    matconv!(fAc,fBc,fCc2,fCbuffer,n,4*p)
+    matconv!(fAc,fBc,fCc2,n,4*p)
     t_CU2 = time()-t0
     print("For matrix convolutions:\n    Vectorization took $t_TCK2 seconds\n    CUDA took $t_CU2 seconds\n    err=$(maximum(abs.(Array(fCc2)-fC2)))\n")
 end
