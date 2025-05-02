@@ -7,7 +7,7 @@ include("TCcuda.jl")
 """
 test_pd_matrix() does a test run on the tiled matrix matrix multiplication with simulated TensorCore
 """
-function test_pd_matrix(p=2,n=256,expmin=0,expmax=0)
+function test_pd_matrix(p=2,n=256,nfrag=16,expmin=0,expmax=0)
     A = random_pd.(expmin*ones(n,n),expmax*ones(n,n),Ref(p))
     B = random_pd.(expmin*ones(n,n),expmax*ones(n,n),Ref(p))
     fA = flat(split4pd.(A))
@@ -32,7 +32,7 @@ function test_pd_matrix(p=2,n=256,expmin=0,expmax=0)
     flatmatconv!(fA,fB,fC2,n,4*p,flatTCKernel!)
     t_TCK2 = time()-t0
     t0 = time()
-    matconv!(fAc,fBc,fCc2,n,4*p)
+    matconv!(fAc,fBc,fCc2,n,4*p,nfrag)
     t_CU2 = time()-t0
     print("For matrix convolutions:\n    Vectorization took $t_TCK2 seconds\n    CUDA took $t_CU2 seconds\n    err=$(maximum(abs.(Array(fCc2)-fC2)))\n")
 end
