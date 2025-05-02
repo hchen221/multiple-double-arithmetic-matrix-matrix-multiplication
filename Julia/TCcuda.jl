@@ -14,7 +14,7 @@ function matmul!(A,B,C)
     i = (blockIdx().x-1)*blockDim().x+threadIdx().x
     j = (blockIdx().y-1)*blockDim().y+threadIdx().y
     for k=1:n
-        CUDA.@atomic C[(i-1)*n+j] += A[(i-1)*n+k]*B[(k-1)*n+j]
+        C[(i-1)*n+j] += A[(i-1)*n+k]*B[(k-1)*n+j]
     end
     return nothing
 end
@@ -65,10 +65,11 @@ end
 """
 matconv!(A,B,C,n,p) computes A*B and adds it to C, where A,B,C are nxn matrices of p-doubles
 """
-function matconv!(A,B,C,n,p)
+function matconv!(A,B,C,n,p,nfrag)
+    nlen = Int(n/nfrag)
     function matconvhelp1(i,j)
         Cbuffer = CUDA.zeros(Float64,n^2)
-        @cuda threads=(n,n) blocks=(1,1) matmul!(A[i:p:end],B[j:p:end],Cbuffer)
+        @cuda threads=(nfrag,nfrag) blocks=(nlen,nlen) matmul!(A[i:p:end],B[j:p:end],Cbuffer)
         return Cbuffer
     end
     function matconvhelp2(k)
