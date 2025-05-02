@@ -42,6 +42,27 @@ end
 # Refer to convolution formula in https://homepages.math.uic.edu/~jan/convolutions.pdf
 
 """
+dotconvbutbetter!(A,B,C) runs nxn blocks of px1 threads to do the same as dotconv!(A,B,C), doesn't rely on atomic add
+"""
+function dotconvbutbetter!(A,B,C)
+    n,p = gridDim().x,blockDim().x
+    I,J = blockIdx().x,blockIdx().y
+    i = threadIdx().x
+    for k=1:n
+        for j=1:p
+            if j+i-p>0
+                a = A[(I-1)*n*p+(k-1)*p+(j+i-p)]
+            else
+                a = 0
+            end
+            b = B[(k-1)*n*p+(J-1)*p+(p+1-j)]
+            C[(I-1)*n*p+(J-1)*p+i] += a*b
+        end
+    end
+    return nothing
+end
+
+"""
 matconv!(A,B,C,n,p) computes A*B and adds it to C, where A,B,C are nxn matrices of p-doubles
 """
 function matconv!(A,B,C,n,p)
