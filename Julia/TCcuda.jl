@@ -63,7 +63,7 @@ function dotconvbutbetter!(A,B,C)
 end
 
 """
-matconv!(A,B,C,n,p) computes A*B and adds it to C, where A,B,C are nxn matrices of p-doubles
+matconv!(A,B,C,n,p,nfrag) computes A*B and adds it to C, where A,B,C are nxn matrices of p-doubles, does each matrix multiplication tiled
 """
 function matconv!(A,B,C,n,p,nfrag)
     nlen = Int(n/nfrag)
