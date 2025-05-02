@@ -22,7 +22,7 @@ function test_pd_matrix(p=2,n=256,expmin=0,expmax=0)
     flatTCKernel!(fA,fB,fC1,n,4*p)
     t_TCK = time()-t0
     t0 = time()
-    @cuda threads=(4*p,4*p) blocks=(n,n) dotconv!(fAc,fBc,fCc1)
+    @cuda threads=(4*p,1) blocks=(n,n) dotconvbutbetter!(fAc,fBc,fCc1)
     t_CU = time()-t0
     print("For direct inner product convolutions:\n    Vectorization took $t_TCK seconds\n    CUDA took $t_CU seconds\n    err=$(maximum(abs.(Array(fCc1)-fC1)))\n")
 
