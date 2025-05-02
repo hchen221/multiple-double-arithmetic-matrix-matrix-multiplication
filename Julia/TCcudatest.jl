@@ -37,4 +37,4 @@ function test_pd_matrix(p=2,n=256,nfrag=16,expmin=0,expmax=0)
     print("For matrix convolutions:\n    Vectorization took $t_TCK2 seconds\n    CUDA took $t_CU2 seconds\n    err=$(maximum(abs.(Array(fCc2)-fC2)))\n")
 end
 
-test_pd_matrix(2,64)
+test_pd_matrix(2,64,4)
