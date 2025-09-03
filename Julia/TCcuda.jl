@@ -50,12 +50,13 @@ function dotconvbutbetter!(A,B,C)
     i = threadIdx().x
     for k=1:n
         for j=1:p
-            if j+i-p>0
-                a = A[(I-1)*n*p+(k-1)*p+(j+i-p)]
+            if j <= i
+                a = A[(I-1)*n*p+(k-1)*p+j]
+                b = B[(k-1)*n*p+(J-1)*p+(i+1-j)]
             else
                 a = 0
+                b = 0
             end
-            b = B[(k-1)*n*p+(J-1)*p+(p+1-j)]
             C[(I-1)*n*p+(J-1)*p+i] += a*b
         end
     end
