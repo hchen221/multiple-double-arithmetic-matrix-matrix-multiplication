@@ -1,4 +1,4 @@
-#include "TCcuda.ch"
+#include "TCcuda.h"
 #include "floatybits.h"
 #include <iostream>
 
@@ -100,8 +100,8 @@ vector<int> frag(int n, int p, int i1, int i2, int j1, int j2) {
 
 /*
 matmul!(A,B,C) is a dot product kernel that accumulates the results of A*B to C where A,B,C are nxn matrices of doubles
-*/
-__global__ void matmul(double* A,double* B,double* C) {
+
+__kernel__ void matmul(double* A,double* B,double* C) {
     int n = gridDim.x*blockDim.x;
     int i = blockIdx.x*blockDim.x+threadIdx.x;
     int j = blockIdx.y*blockDim.y+threadIdx.y;
@@ -109,11 +109,11 @@ __global__ void matmul(double* A,double* B,double* C) {
         C[i*n+j] += A[i*n+k]*B[k*n+j];
     }
 }
-
+*/
 /*
 dotconvbutbetter!(A,B,C) runs nxn blocks of px1 threads to do the same as dotconv!(A,B,C), doesn't rely on atomic add
-*/
-__global__ void dotconvbutbetter(double* A,double* B,double* C) {
+
+__kernel__ void dotconvbutbetter(double* A,double* B,double* C) {
     int n = gridDim.x;
     int p = blockDim.x;
     int I = blockIdx.x;
@@ -131,7 +131,8 @@ __global__ void dotconvbutbetter(double* A,double* B,double* C) {
         }
     }
 }
-
+*/
+/*
 void matconv(double* A,double* B,double* C,int n,int p,int nfrag) {
     int nlen = n/nfrag;
     for (int k=0;k<p;k++) {
@@ -150,5 +151,31 @@ void matconv(double* A,double* B,double* C,int n,int p,int nfrag) {
         for (int l=0;l<n*n;l++) {
             C[k+l*p] += Cij[l];
         }
+    }
+}
+*/
+
+/*Do p^2 blocks for the multiplication part of the convolution, each block does n^2 threads (maybe reduce it to n threads for a single inner product for testing purposes), have a separate kernel do the adding*/
+__kernel__ void convmult(double* A,double* B,double* C_aux) { // A,B are n^2*p (parts form rows form columns), C_aux is n^2*p^2 (row parts form column parts for rows form columns)
+    int p = gridDim.x;
+    int n = blockDim.x;
+    int i = blockIdx.x;
+    int j = blockIdx.y;
+    int I = threadIdx.x;
+    int J = threadIdx.y;
+    // Want to compute A_i[I,:]*B_j[:,J], C_aux_{i,j}[I,J]
+    for (int K=0;K<n;K++) {
+        C_aux[I*n*p*p+J*p*p+i*p+j] += A[I*n*p+K*p+i]*B[K*n*p+J*p+j];
+    }
+}
+
+__kernel__ void convadd(double* C,double* C_aux) { // C is n^2*p (parts form rows form columns), C_aux is n^2*p^2 (row parts form column parts form rows form columns)
+    int p = gridDim.x;
+    int n = blockDim.x;
+    int i = blockIdx.x;
+    int I = threadIdx.x;
+    int J = threadIdx.y;
+    for (int j=0;j<=i;j++) {
+        C[I*n*p+J*p+i] += C_aux[I*n*p*p+J*p*p+j*p+(i-j)];
     }
 }
