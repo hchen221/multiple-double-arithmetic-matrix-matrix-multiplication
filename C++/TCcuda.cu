@@ -1,5 +1,6 @@
 #include "TCcuda.h"
 #include "floatybits.h"
+#include "floatybits.cu"
 #include <iostream>
 
 /*
@@ -178,4 +179,5 @@ __kernel__ void convadd(double* C,double* C_aux) { // C is n^2*p (parts form row
     for (int j=0;j<=i;j++) {
         C[I*n*p+J*p+i] += C_aux[I*n*p*p+J*p*p+j*p+(i-j)];
     }
+
 }
