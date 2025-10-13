@@ -23,14 +23,14 @@ int main() {
     double* cC_aux;
     double* cC_worse;
     
-    cudaMalloc((void**)&cA,n*n*4*p);
-    cudaMemcpy(cA,A8.data(),n*n*4*p,cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&cB,n*n*4*p);
-    cudaMemcpy(cB,B8.data(),n*n*4*p,cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&cC_aux,n*n*4*p*4*p);
-    cudaMemcpy(cC_aux,C_aux.data(),n*n*4*p*4*p,cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&cC,n*n*4*p);
-    cudaMemcpy(cC,C8.data(),n*n*4*p,cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&cA,n*n*4*p*sizeof(double));
+    cudaMemcpy(cA,A8.data(),n*n*4*p*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&cB,n*n*4*p*sizeof(double));
+    cudaMemcpy(cB,B8.data(),n*n*4*p*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&cC_aux,n*n*4*p*4*p*sizeof(double));
+    cudaMemcpy(cC_aux,C_aux.data(),n*n*4*p*4*p*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&cC,n*n*4*p*sizeof(double));
+    cudaMemcpy(cC,C8.data(),n*n*4*p*sizeof(double),cudaMemcpyHostToDevice);
 
     dim3 gridsize(4*p,4*p);
     dim3 blocksize(n,n);
@@ -40,7 +40,10 @@ int main() {
 
     vector<double> C8;
 
-    cudaMemcpy(C8.data(),cC,n*n*4*p,cudaMemcpyDeviceToHost);
+    cudaMemcpy(C8.data(),cC,n*n*4*p*sizeof(double),cudaMemcpyDeviceToHost);
+
+    cout << "C8? Complete." << endl;
     
     return 0;
+
 }
