@@ -1,5 +1,5 @@
 #include "floatybits.h"
-#include <vector>
+
 /*
 val_bits(bits) parses an array or vector of bits and returns the numerical value
 */
@@ -159,4 +159,5 @@ vector<double> split4pd(vector<double> x) {
     }
     return x4;
 }
+
 
