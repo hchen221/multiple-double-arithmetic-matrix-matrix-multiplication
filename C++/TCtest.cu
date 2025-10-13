@@ -1,4 +1,5 @@
 #include "TCcuda.h"
+#include "TCcuda.cu"
 #include <iostream>
 
 using namespace std;
@@ -45,4 +46,5 @@ int main() {
     return 0;
 
 }
+
 
