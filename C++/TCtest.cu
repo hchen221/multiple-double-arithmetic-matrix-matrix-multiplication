@@ -38,8 +38,6 @@ int main() {
     dim3 flatsize(4*p,1);
     convadd<<<flatsize,blocksize>>>(cC_aux,cC);
 
-    vector<double> C8;
-
     cudaMemcpy(C8.data(),cC,n*n*4*p*sizeof(double),cudaMemcpyDeviceToHost);
 
     cout << "C8? Complete." << endl;
@@ -47,3 +45,4 @@ int main() {
     return 0;
 
 }
+
