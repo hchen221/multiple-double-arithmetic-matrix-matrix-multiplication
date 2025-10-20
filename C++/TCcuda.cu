@@ -1,6 +1,6 @@
 #include "TCcuda.h"
 #include "floatybits.h"
-#include "floatybits.cpp"
+//#include "floatybits.cpp"
 #include <iostream>
 
 /*
@@ -146,5 +146,6 @@ __global__ void dotconvbutbetter(double* A,double* B,double* C) {
         }
     }
 }
+
 
 
