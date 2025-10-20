@@ -134,6 +134,7 @@ __global__ void dotconvbutbetter(double* A,double* B,double* C) {
     int i = threadIdx.x;
     for (int k=0;k<n;k++) {
         for (int j=0;j<p;j++) {
+            double a,b;
             if (j<=i) {
                 a = A[I*n*p+k*p+j];
                 b = B[k*n*p+J*p+(i-j)];
@@ -145,3 +146,4 @@ __global__ void dotconvbutbetter(double* A,double* B,double* C) {
         }
     }
 }
+
