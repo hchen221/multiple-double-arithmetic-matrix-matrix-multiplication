@@ -99,63 +99,6 @@ vector<int> frag(int n, int p, int i1, int i2, int j1, int j2) {
     return ind;
 }
 
-/*
-matmul!(A,B,C) is a dot product kernel that accumulates the results of A*B to C where A,B,C are nxn matrices of doubles
-
-__kernel__ void matmul(double* A,double* B,double* C) {
-    int n = gridDim.x*blockDim.x;
-    int i = blockIdx.x*blockDim.x+threadIdx.x;
-    int j = blockIdx.y*blockDim.y+threadIdx.y;
-    for (int k=0;k<n;k++) {
-        C[i*n+j] += A[i*n+k]*B[k*n+j];
-    }
-}
-*/
-/*
-dotconvbutbetter!(A,B,C) runs nxn blocks of px1 threads to do the same as dotconv!(A,B,C), doesn't rely on atomic add
-
-__kernel__ void dotconvbutbetter(double* A,double* B,double* C) {
-    int n = gridDim.x;
-    int p = blockDim.x;
-    int I = blockIdx.x;
-    int J = blockIdx.y;
-    int i = threadIdx.x;
-    for (int k=0;k<n;k++) {
-        for (int j=0;j<p;j++) {
-            if (j+i-p>0) {
-                a = A[I*n*p+k*p+j+i-p];
-            } else {
-                a = 0;
-            }
-            b = B[k*n*p+J*p+p-j]
-            C[I*n*p+J*p+i] += a*b;
-        }
-    }
-}
-*/
-/*
-void matconv(double* A,double* B,double* C,int n,int p,int nfrag) {
-    int nlen = n/nfrag;
-    for (int k=0;k<p;k++) {
-        double Cij[n*n] = {};
-        for (int i=0;i<k;i++) {
-            double Ai[n*n] = {};
-            double Bj[n*n] = {};
-            for (int l=0;l<n*n;l++) {
-                Ai[l] = A[i+l*p];
-                Bj[l] = B[k-i+l*p];
-            }
-            dim3 gridsize(nfrag,nfrag);
-            dim3 blocksize(nlen,nlen);
-            matmul<<<gridsize,blocksize>>>(Ai,Bj,Cij);
-        }
-        for (int l=0;l<n*n;l++) {
-            C[k+l*p] += Cij[l];
-        }
-    }
-}
-*/
-
 /*Do p^2 blocks for the multiplication part of the convolution, each block does n^2 threads (maybe reduce it to n threads for a single inner product for testing purposes), have a separate kernel do the adding*/
 __global__ void convmult(double* A,double* B,double* C_aux) { // A,B are n^2*p (parts form rows form columns), C_aux is n^2*p^2 (row parts form column parts for rows form columns)
     int p = gridDim.x;
@@ -183,5 +126,22 @@ __global__ void convadd(double* C,double* C_aux) { // C is n^2*p (parts form row
 }
 
 /*This is a naive implementation which computes the convolutions within the kernel, using nxn blocks and px1 threads per block. Use for comparison purposes*/
-
-
+__global__ void dotconvbutbetter(double* A,double* B,double* C) {
+    int n = gridDim.x;
+    int p = blockDim.x;
+    int I = blockIdx.x;
+    int J = blockIdx.y;
+    int i = threadIdx.x;
+    for (int k=0;k<n;k++) {
+        for (int j=0;j<p;j++) {
+            if (j<=i) {
+                a = A[I*n*p+k*p+j];
+                b = B[k*n*p+J*p+(i-j)];
+            } else {
+                a = 0;
+                b = 0;
+            }
+            C[I*n*p+J*p+i] += a*b;
+        }
+    }
+}
