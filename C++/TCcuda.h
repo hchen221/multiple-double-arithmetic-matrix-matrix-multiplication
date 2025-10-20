@@ -46,7 +46,8 @@ vector<int> frag(int n, int p, int i1, int i2, int j1, int j2);
 
 //void matconv(double* A,double* B,double* C,int n,int p,int nfrag);
 
-__kernel__ void convmult(double* A,double* B,double* C_aux);
-__kernel__ void convadd(double* C,double* C_aux);
+__global__ void convmult(double* A,double* B,double* C_aux);
+__global__ void convadd(double* C,double* C_aux);
+
 
 #endif
