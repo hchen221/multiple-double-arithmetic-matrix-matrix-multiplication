@@ -1,6 +1,6 @@
 all: matmatTC
 
 matmatTC:
-	nvcc TCtest.cpp
-
-
+    gcc -c floatybits.cpp
+	nvcc -c TCcuda.cu
+    gcc TCtest.cpp
