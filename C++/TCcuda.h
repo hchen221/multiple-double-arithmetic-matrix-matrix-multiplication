@@ -49,5 +49,7 @@ vector<int> frag(int n, int p, int i1, int i2, int j1, int j2);
 __global__ void convmult(double* A,double* B,double* C_aux);
 __global__ void convadd(double* C,double* C_aux);
 
+__global__ void dotconvbutbetter(double* A,double* B,double* C);
 
 #endif
+
