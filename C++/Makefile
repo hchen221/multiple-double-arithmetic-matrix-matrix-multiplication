@@ -1,5 +1,6 @@
 all: matmatTC
 
 matmatTC:
-	nvcc TCtest.cu
+	nvcc TCtest.cpp
+
 
