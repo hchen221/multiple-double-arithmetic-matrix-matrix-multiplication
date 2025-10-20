@@ -1,5 +1,5 @@
 #include "TCcuda.h"
-#include "TCcuda.cu"
+//#include "TCcuda.cu"
 #include <iostream>
 #include <cmath>
 
@@ -63,6 +63,7 @@ int main() {
     return 0;
 
 }
+
 
 
 
