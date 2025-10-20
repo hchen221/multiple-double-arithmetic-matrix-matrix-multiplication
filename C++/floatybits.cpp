@@ -125,16 +125,16 @@ vector<double> split4(vector<int> bits) {
     vector<int> bits3 = bits;
     for (int i=0;i<52;i++) {
         if (i<13) {
-            bits2[11+i] = 0;
-            bits3[11+i] = 0;
+            bits2[12+i] = 0;
+            bits3[12+i] = 0;
         }
         if (i>=13&&i<26) {
-            bits1[11+i] = 0;
-            bits3[11+i] = 0;
+            bits1[12+i] = 0;
+            bits3[12+i] = 0;
         }
         if (i>=26&&i<39) {
-            bits1[11+i] = 0;
-            bits2[11+i] = 0;
+            bits1[12+i] = 0;
+            bits2[12+i] = 0;
         }
     }
     vector<double> D;
@@ -159,6 +159,7 @@ vector<double> split4pd(vector<double> x) {
     }
     return x4;
 }
+
 
 
 
