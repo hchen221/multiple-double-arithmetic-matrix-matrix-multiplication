@@ -136,6 +136,11 @@ vector<double> split4(vector<int> bits) {
             bits1[12+i] = 0;
             bits2[12+i] = 0;
         }
+        if (i>=39) {
+            bits1[12+i] = 0;
+            bits2[12+i] = 0;
+            bits3[12+i] = 0;
+        }
     }
     vector<double> D;
     double d1 = double_rep(bits1);
@@ -159,6 +164,7 @@ vector<double> split4pd(vector<double> x) {
     }
     return x4;
 }
+
 
 
 
