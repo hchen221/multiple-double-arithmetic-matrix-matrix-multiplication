@@ -61,7 +61,7 @@ vector<int> bitform(double x) {
         bits.push_back(1);
     }
     vector<int> fracbits = expandfracbits(fraction);
-    vector<int> expbits = expandexpbits(exponent);
+    vector<int> expbits = expandexpbits(exponent+1023);
     bits.insert(bits.end(),expbits.begin(),expbits.end());
     bits.insert(bits.end(),fracbits.begin(),fracbits.end());
     return bits;
@@ -159,5 +159,6 @@ vector<double> split4pd(vector<double> x) {
     }
     return x4;
 }
+
 
 
