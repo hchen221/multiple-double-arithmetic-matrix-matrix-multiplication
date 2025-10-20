@@ -1,7 +1,8 @@
 all: matmatTC
 
 matmatTC:
-	g++ -c floatybits.cpp TCflat.cpp
-	g++ -c floatybits.cpp TCtest.cpp
-	g++ -c TCflat.cpp TCtest.cpp
-	g++ floatybits.o TCflat.o TCtest.o
+	g++ -c floatybits.cpp TCcuda.cu
+	g++ -c floatybits.cpp TCtest.cu
+	g++ -c TCcuda.cu TCtest.cu
+
+	g++ floatybits.o TCcuda.o TCtest.o
