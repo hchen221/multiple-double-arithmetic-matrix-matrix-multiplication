@@ -157,7 +157,7 @@ void matconv(double* A,double* B,double* C,int n,int p,int nfrag) {
 */
 
 /*Do p^2 blocks for the multiplication part of the convolution, each block does n^2 threads (maybe reduce it to n threads for a single inner product for testing purposes), have a separate kernel do the adding*/
-__kernel__ void convmult(double* A,double* B,double* C_aux) { // A,B are n^2*p (parts form rows form columns), C_aux is n^2*p^2 (row parts form column parts for rows form columns)
+__global__ void convmult(double* A,double* B,double* C_aux) { // A,B are n^2*p (parts form rows form columns), C_aux is n^2*p^2 (row parts form column parts for rows form columns)
     int p = gridDim.x;
     int n = blockDim.x;
     int i = blockIdx.x;
@@ -170,7 +170,7 @@ __kernel__ void convmult(double* A,double* B,double* C_aux) { // A,B are n^2*p (
     }
 }
 
-__kernel__ void convadd(double* C,double* C_aux) { // C is n^2*p (parts form rows form columns), C_aux is n^2*p^2 (row parts form column parts form rows form columns)
+__global__ void convadd(double* C,double* C_aux) { // C is n^2*p (parts form rows form columns), C_aux is n^2*p^2 (row parts form column parts form rows form columns)
     int p = gridDim.x;
     int n = blockDim.x;
     int i = blockIdx.x;
@@ -181,3 +181,7 @@ __kernel__ void convadd(double* C,double* C_aux) { // C is n^2*p (parts form row
     }
 
 }
+
+/*This is a naive implementation which computes the convolutions within the kernel, using nxn blocks and px1 threads per block. Use for comparison purposes*/
+
+
