@@ -187,9 +187,20 @@ vector<double> zeros(int n, int p) {
     return A;
 }
 
-void convmult2(vector<double> A,vector<double> B,vector<double> &C_aux, int n, int p) {                                                                    for (int i=0;i<p;i++) {                                                          for (int j=0;j<p;j++) {                                                          for (int I=0;I<n;I++) {                                                          for (int J=0;J<n;J++) {                                                          for (int K=0;K<n;K++) {                                                           C_aux[I*n*p*p+J*p*p+i*p+j] += A[I*n*p+K*p+i]*B[K*n*p+J*p+j];                                                                             }                                                                }                                                                }                                                                }                                                                }                                                                }                                                                             
+void convmult2(vector<double> A,vector<double> B,vector<double> &C_aux, int n, int p) {
+	for (int i=0;i<p;i++) {
+		for (int j=0;j<p;j++) {
+			for (int I=0;I<n;I++) {
+				for (int J=0;J<n;J++) {
+					for (int K=0;K<n;K++) {
+						C_aux[I*n*p*p+J*p*p+i*p+j] += A[I*n*p+K*p+i]*B[K*n*p+J*p+j];                                                                             }                                                                }                                                                }                                                                }                                                                }                                                                }                                                                             
 
-void convadd2(vector<double> &C,vector<double> &C_aux, int n, int p) {             for (int i=0;i<p;i++) {                                                          for (int I=0;I<n;I++) {                                                          for (int J=0;J<n;J++) {                                                          for (int j=0;j<=i;j++) {                                                         C[I*n*p+J*p+i] += C_aux[I*n*p*p+J*p*p+j*p+(i-j)];
+void convadd2(vector<double> &C,vector<double> &C_aux, int n, int p) {
+	for (int i=0;i<p;i++) {
+		for (int I=0;I<n;I++) {
+			for (int J=0;J<n;J++) {
+				for (int j=0;j<=i;j++) {
+	C[I*n*p+J*p+i] += C_aux[I*n*p*p+J*p*p+j*p+(i-j)];
                                 }
                         }
                 }
@@ -219,10 +230,10 @@ void dotconvbutworse(vector<double> A,vector<double> B,vector<double> &C, int n,
 }
 
 int main() {
-    // Write C++ code here
-    int p = 2;
-    int n = 16;
-    int nfrag = 4;
+    
+    int p = 4;
+    int n = 128;
+    int nfrag = 16;
     int expmin = 0;
     int expmax = 0;
     
