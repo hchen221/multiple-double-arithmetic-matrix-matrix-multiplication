@@ -148,6 +148,7 @@ __global__ void convadd(double* C,double* C_aux) { // C is n^2*p (parts form row
 	} else {
             C[I*n*p+J*p+i] += 0;
 	}
+	__syncthreads();
     }
 
 }
