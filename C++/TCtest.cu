@@ -2,7 +2,7 @@
 //#include "TCcuda.cu"
 #include <iostream>
 #include <cmath>
-
+// something something p
 using namespace std;
 
 void convmultcudant(vector<double> A,vector<double> B,vector<double> &C_aux, int n, int p) {
