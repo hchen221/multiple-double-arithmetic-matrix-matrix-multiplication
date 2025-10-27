@@ -99,6 +99,15 @@ vector<int> frag(int n, int p, int i1, int i2, int j1, int j2) {
     return ind;
 }
 
+__global__ void matmul(double* A,double* B,double* C) {
+    int n = gridDim.x*blockDim.x;
+    int i = blockIdx.x*blockDim.x+threadIdx.x;
+    int j = blockIdx.y*blockDim.y+threadIdx.y;
+    for (int k=0;k<n;k++) {
+	C[i*n+j]+=A[i*n+k]*B[k*n+j];
+    }
+}
+
 /*Do p^2 blocks for the multiplication part of the convolution, each block does n^2 threads (maybe reduce it to n threads for a single inner product for testing purposes), have a separate kernel do the adding*/
 __global__ void convmult(double* A,double* B,double* C_aux) { // A,B are n^2*p (parts form rows form columns), C_aux is n^2*p^2 (row parts form column parts for rows form columns)
     int p = gridDim.x;
@@ -119,8 +128,12 @@ __global__ void convadd(double* C,double* C_aux) { // C is n^2*p (parts form row
     int i = blockIdx.x;
     int I = threadIdx.x;
     int J = threadIdx.y;
-    for (int j=0;j<=i;j++) {
-        C[I*n*p+J*p+i] += C_aux[I*n*p*p+J*p*p+j*p+(i-j)];
+    for (int j=0;j<p;j++) {
+	if (j<=i) {
+	    C[I*n*p+J*p+i] += C_aux[I*n*p*p+J*p*p+j*p+(i-j)];
+	} else {
+            C[I*n*p+J*p+i] += 0;
+	}
     }
 
 }
