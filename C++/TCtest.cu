@@ -42,7 +42,8 @@ int main() {
     dim3 flatsize(4*p,1);
 
 
-    convmult<<<gridsize,blocksize>>>(cA,cB,cC_aux);
+    //convmult<<<gridsize,blocksize>>>(cA,cB,cC_aux);
+    convmult2<<<flatsize,blocksize>>>(cA,cB,cC_aux);
     convadd<<<flatsize,blocksize>>>(cC_aux,cC);
 
     dotconvbutbetter<<<blocksize,flatsize>>>(cA,cB,cC_worse);

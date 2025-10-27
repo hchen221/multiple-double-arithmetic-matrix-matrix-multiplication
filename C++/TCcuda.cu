@@ -122,6 +122,20 @@ __global__ void convmult(double* A,double* B,double* C_aux) { // A,B are n^2*p (
     }
 }
 
+__global__ void convmult2(double* A,double* B,double* C_aux) { // A,B are n^2*p (parts form rows form columns), C_aux is n^2*p^2 (row parts form column parts for rows form columns), this one only does px1 blocks instead of p blocks
+    int p = gridDim.x;
+    int n = blockDim.x;
+    int i = blockIdx.x;
+    int I = threadIdx.x;
+    int J = threadIdx.y;
+    // Want to compute A_i[I,:]*B_j[:,J], C_aux_{i,j}[I,J]
+    for (int j=0;j<p;j++) {
+	for (int K=0;K<n;K++) {
+            C_aux[I*n*p*p+J*p*p+i*p+j] += A[I*n*p+K*p+i]*B[K*n*p+J*p+j];
+	}
+    }
+}
+
 __global__ void convadd(double* C,double* C_aux) { // C is n^2*p (parts form rows form columns), C_aux is n^2*p^2 (row parts form column parts form rows form columns)
     int p = gridDim.x;
     int n = blockDim.x;
