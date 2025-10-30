@@ -2,6 +2,10 @@ CUDA=/usr/local/cuda/include
 
 all: matmatTC
 
+basic:
+	nvcc -c basic.cu
+	nvcc basic.o -o basicrun
+
 matmatTC:
 	gcc -c floatybits.cpp
 	nvcc -c TCcuda.cu
@@ -16,3 +20,4 @@ clean:
 	rm -f *.o
 	rm mytest
 	rm cudant
+	rm basicrun
