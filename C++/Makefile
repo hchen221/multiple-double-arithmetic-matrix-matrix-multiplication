@@ -12,6 +12,12 @@ matmatTC:
 	nvcc -c TCtest.cu
 	nvcc floatybits.o TCcuda.o TCtest.o -o mytest
 
+matmatTC2:
+	gcc -c floatybits.cpp
+	nvcc -c TCcuda.cu
+	nvcc -c TCtest2.cu
+	nvcc floatybits.o TCcuda.o TCtest2.o -o mytest
+
 cudantTC:
 	gcc -c TCcudant.cpp
 	c++ TCcudant.o -o cudant
