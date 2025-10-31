@@ -153,6 +153,34 @@ __global__ void convadd(double* C,double* C_aux) { // C is n^2*p (parts form row
 
 }
 
+vector<vector<double>> manualconvmult(vector<vector<double>> A,vector<vector<double>> B,int n,int p, int nfrag) {
+    vector<vector<double>> C;
+    int nlen = n/nfrag;
+    for (int i=0;i<p;i++) {
+	vector<double> Ci = zeros(n,1);
+	C.push_back(Ci);
+	for (int j=0;j<=i;j++) {
+	    double* Ax;
+	    double* By;
+	    double* Cxy;
+            
+	    cudaMalloc((void**)&Ax,n*n*sizeof(double));
+	    cudaMemcpy(Ax,A[j].data(),n*n*sizeof(double),cudaMemcpyHostToDevice);
+	    cudaMalloc((void**)&By,n*n*sizeof(double));
+	    cudaMemcpy(By,B[i-j].data(),n*n*sizeof(double),cudaMemcpyHostToDevice);
+	    cudaMalloc((void**)&Cxy,n*n*sizeof(double));
+	    cudaMemcpy(Cxy,C[i].data(),n*n*sizeof(double),cudaMemcpyHostToDevice);
+
+	    dim3 gridSize(nlen,nlen);
+	    dim3 blockSize(nfrag,nfrag);
+	    matmul<<<gridSize,blockSize>>>(Ax,By,Cxy);
+
+	    cudaMemcpy(C[i].data(),Cxy,n*n*sizeof(double),cudaMemcpyDeviceToHost);
+	}
+    }
+    return C;
+}
+
 /*This is a naive implementation which computes the convolutions within the kernel, using nxn blocks and px1 threads per block. Use for comparison purposes*/
 __global__ void dotconvbutbetter(double* A,double* B,double* C) {
     int n = gridDim.x;

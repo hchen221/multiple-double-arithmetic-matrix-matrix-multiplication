@@ -54,4 +54,6 @@ split4pd(x) applies split4 to a p-double x then returns the combined 4p-double
 */
 vector<double> split4pd(vector<double> x);
 
+vector<vector<double>> splitp(vector<double> A,int p);
+
 #endif

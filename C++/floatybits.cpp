@@ -166,6 +166,18 @@ vector<double> split4pd(vector<double> x) {
 }
 
 
-// something something bottom text
+vector<vector<double>> splitp(vector<double> A,int p) {
+    vector<vector<double>> Ap;
+    for (int i=0;i<p;i++) {
+	vector<double> Ai;
+	int j=i;
+	while (j<=A.size()) {
+            Ai.push_back(A[j]);
+	    j += p;
+	}
+	Ap.push_back(Ai);
+    }
+    return Ap;
+}
 
 

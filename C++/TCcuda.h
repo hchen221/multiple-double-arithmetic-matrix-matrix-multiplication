@@ -50,6 +50,8 @@ __global__ void convmult(double* A,double* B,double* C_aux);
 __global__ void convmult2(double* A,double* B,double* C_aux);
 __global__ void convadd(double* C,double* C_aux);
 
+vector<vector<double>> manualconvmult(vector<vector<double>> A,vector<vector<double>> B,int n,int p);
+
 __global__ void dotconvbutbetter(double* A,double* B,double* C);
 
 #endif
