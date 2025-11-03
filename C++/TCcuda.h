@@ -53,6 +53,7 @@ __global__ void convadd(double* C,double* C_aux);
 vector<vector<double>> manualconvmult(vector<vector<double>> A,vector<vector<double>> B,int n,int p, int nfrag);
 
 __global__ void dotconvbutbetter(double* A,double* B,double* C);
+vector<vector<double>> directdotconv(vector<double> A,vector<double> B,vector<double> C, int n, int p);
 
 #endif
 
