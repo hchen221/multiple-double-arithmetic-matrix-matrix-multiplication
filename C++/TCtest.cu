@@ -63,10 +63,11 @@ int main() {
     dim3 gridsize(4*p,4*p);
     dim3 blocksize(n,n);
     dim3 flatsize(4*p,1);
+    dim3 haha1(1,1);
 
 
-    //convmult<<<gridsize,blocksize>>>(cA,cB,cC_aux);
-    convmult2<<<flatsize,blocksize>>>(cA,cB,cC_aux);
+    convmult<<<gridsize,haha1>>>(cA,cB,cC_aux,n,4*p,nfrag);
+    //convmult2<<<flatsize,blocksize>>>(cA,cB,cC_aux);
     cudaMemcpy(C_aux.data(),cC_aux,n*n*4*p*4*p*sizeof(double),cudaMemcpyDeviceToHost);
     vector<double> C_aux2 = zeros(n,4*p*4*p);
     convmultcudant(A8,B8,C_aux2,n,4*p);

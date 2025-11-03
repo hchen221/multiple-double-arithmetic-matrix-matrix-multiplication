@@ -40,17 +40,14 @@ vector<int> rowslice(int n, int p, int i, int j1, int j2);
 vector<int> col(int n, int p, int j);
 vector<int> frag(int n, int p, int i1, int i2, int j1, int j2);
 
-__global__ void matmul(double* A,double* B,double* C);
-
-//__global__ void dotconvbutbetter(double* A,double* B,double* C);
-
-//void matconv(double* A,double* B,double* C,int n,int p,int nfrag);
+//simple kernel for matrix matrix multiplication on flat arrays of size nxn, executed on nlen x nlen tiles of size nfrag x nfrag where nlen*nfrag=n
+__global__ void matmul(double* A,double* B,double* C, int n);
 
 __global__ void convmult(double* A,double* B,double* C_aux);
-__global__ void convmult2(double* A,double* B,double* C_aux);
+//convmult2(double* A,double* B,double* C_aux);
 __global__ void convadd(double* C,double* C_aux);
 
-vector<vector<double>> manualconvmult(vector<vector<double>> A,vector<vector<double>> B,int n,int p, int nfrag);
+//vector<vector<double>> manualconvmult(vector<vector<double>> A,vector<vector<double>> B,int n,int p, int nfrag);
 
 __global__ void dotconvbutbetter(double* A,double* B,double* C);
 vector<vector<double>> directdotconv(vector<double> A,vector<double> B,vector<double> C, int n, int p);

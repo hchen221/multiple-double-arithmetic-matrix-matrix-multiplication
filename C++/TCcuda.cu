@@ -99,8 +99,7 @@ vector<int> frag(int n, int p, int i1, int i2, int j1, int j2) {
     return ind;
 }
 
-__global__ void matmul(double* A,double* B,double* C) {
-    int n = gridDim.x*blockDim.x;
+__global__ void matmul(double* A,double* B,double* C,int n) {
     int i = blockIdx.x*blockDim.x+threadIdx.x;
     int j = blockIdx.y*blockDim.y+threadIdx.y;
     for (int k=0;k<n;k++) {
@@ -108,32 +107,38 @@ __global__ void matmul(double* A,double* B,double* C) {
     }
 }
 
-/*Do p^2 blocks for the multiplication part of the convolution, each block does n^2 threads (maybe reduce it to n threads for a single inner product for testing purposes), have a separate kernel do the adding*/
-__global__ void convmult(double* A,double* B,double* C_aux) { // A,B are n^2*p (parts form rows form columns), C_aux is n^2*p^2 (row parts form column parts for rows form columns)
-    int p = gridDim.x;
-    int n = blockDim.x;
+/*convmult executes p^2 threads in a single block where thread (i,j) computes the matrix product of A_i*B_j, where the result gets accumulated to C_aux_{i,j}. n is the size of the matrix, nfrag is the size of the tile for the matrix products, and p is the number of double parts
+ */
+__global__ void convmult(double* A,double* B,double* C_aux,int n,int p,int nfrag) { // A,B are n^2*p (parts form rows form columns), C_aux is n^2*p^2 (row parts form column parts for rows form columns)
     int i = blockIdx.x;
     int j = blockIdx.y;
-    int I = threadIdx.x;
-    int J = threadIdx.y;
-    // Want to compute A_i[I,:]*B_j[:,J], C_aux_{i,j}[I,J]
-    for (int K=0;K<n;K++) {
-        C_aux[I*n*p*p+J*p*p+i*p+j] += A[I*n*p+K*p+i]*B[K*n*p+J*p+j];
-    }
-}
+    // Want to compute A_i[I,:]*B_j[:,J], C_aux_{i,j}[I,J], capital letters denote matrix entries, lowercase denote parts of the p-double
+    if (j <= i) {
+        double* Ax = new double[n];
+        double* By = new double[n];
+        double* Cxy = new double[n];
 
-__global__ void convmult2(double* A,double* B,double* C_aux) { // A,B are n^2*p (parts form rows form columns), C_aux is n^2*p^2 (row parts form column parts for rows form columns), this one only does px1 blocks instead of p blocks
-    int p = gridDim.x;
-    int n = blockDim.x;
-    int i = blockIdx.x;
-    int I = threadIdx.x;
-    int J = threadIdx.y;
-    // Want to compute A_i[I,:]*B_j[:,J], C_aux_{i,j}[I,J]
-    for (int j=0;j<p;j++) {
-	for (int K=0;K<n;K++) {
-            C_aux[I*n*p*p+J*p*p+i*p+j] += A[I*n*p+K*p+i]*B[K*n*p+J*p+j];
-	}
+        for (int I=0;I<n;I++) {
+	    for (int J=0;J<n;J++) {
+	        Ax[I*n+J] = A[I*n*p+J*p+j]; // take the jth part of A
+       	        By[I*n+J] = B[I*n*p+J*p+i-j]; // take the i-j th part of B
+	        Cxy[I*n+J] = C_aux[I*n*p*p+J*p*p+i*p+j]; // Locate the i,j position in C_aux
+    	    }
+        }
+
+        int nlen = n/nfrag;
+        dim3 gridSize(nlen,nlen);
+        dim3 blockSize(nfrag,nfrag);
+        matmul<<<gridSize,blockSize>>>(Ax,By,Cxy,n);
+
+        for (int I=0;I<n;I++) {
+            for (int J=0;J<n;J++) {
+                C_aux[I*n*p*p+J*p*p+i*p+j] = Cxy[I*n+J]; // Locate the i,j position in C_aux
+            }
+        }
     }
+    __syncthreads();
+
 }
 
 __global__ void convadd(double* C,double* C_aux) { // C is n^2*p (parts form rows form columns), C_aux is n^2*p^2 (row parts form column parts form rows form columns)
@@ -153,7 +158,9 @@ __global__ void convadd(double* C,double* C_aux) { // C is n^2*p (parts form row
 
 }
 
-/*This function treats the matrices of p-doubles as a vector of the p matrices in order to perform the convolution*/
+/*This function treats the matrices of p-doubles as a vector of the p matrices in order to perform the convolution
+ */
+/*
 vector<vector<double>> manualconvmult(vector<vector<double>> A,vector<vector<double>> B,int n,int p, int nfrag) {
     vector<vector<double>> C;
     int nlen = n/nfrag;
@@ -174,13 +181,14 @@ vector<vector<double>> manualconvmult(vector<vector<double>> A,vector<vector<dou
 
 	    dim3 gridSize(nlen,nlen);
 	    dim3 blockSize(nfrag,nfrag);
-	    matmul<<<gridSize,blockSize>>>(Ax,By,Cxy);
+	    matmul<<<gridSize,blockSize>>>(Ax,By,Cxy,n);
 
 	    cudaMemcpy(C[i].data(),Cxy,n*n*sizeof(double),cudaMemcpyDeviceToHost);
 	}
     }
     return C;
 }
+*/
 
 /*This is a naive implementation which computes the convolutions within the kernel, using nxn blocks and px1 threads per block. Use for comparison purposes*/
 __global__ void dotconvbutbetter(double* A,double* B,double* C) {
