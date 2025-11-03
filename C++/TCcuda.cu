@@ -153,6 +153,7 @@ __global__ void convadd(double* C,double* C_aux) { // C is n^2*p (parts form row
 
 }
 
+/*This function treats the matrices of p-doubles as a vector of the p matrices in order to perform the convolution*/
 vector<vector<double>> manualconvmult(vector<vector<double>> A,vector<vector<double>> B,int n,int p, int nfrag) {
     vector<vector<double>> C;
     int nlen = n/nfrag;
@@ -203,5 +204,24 @@ __global__ void dotconvbutbetter(double* A,double* B,double* C) {
     }
 }
 
+vector<vector<double>> directdotconv(vector<double> A,vector<double> B,vector<double> C, int n, int p) {
+    double* Ad;
+    double* Bd;
+    double* Cd;
 
+    cudaMalloc((void**)&Ad,n*n*p*sizeof(double));
+    cudaMalloc((void**)&Bd,n*n*p*sizeof(double));
+    cudaMalloc((void**)&Cd,n*n*p*sizeof(double));
+    cudaMemcpy(Ad,A.data(),n*n*p*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMemcpy(Bd,B.data(),n*n*p*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMemcpy(Cd,C.data(),n*n*p*sizeof(double),cudaMemcpyHostToDevice);
+
+    dim3 gridSize(n,n);
+    dim3 blockSize(p,1);
+    dotconvbutbetter<<<gridSize,blockSize>>>(Ad,Bd,Cd);
+
+    cudaMemcpy(C.data(),Cd,n*n*p*sizeof(double),cudaMemcpyDeviceToHost);
+
+    return splitp(C,p);
+}
 
