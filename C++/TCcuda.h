@@ -40,11 +40,12 @@ vector<int> rowslice(int n, int p, int i, int j1, int j2);
 vector<int> col(int n, int p, int j);
 vector<int> frag(int n, int p, int i1, int i2, int j1, int j2);
 
-//simple kernel for matrix matrix multiplication on flat arrays of size nxn, executed on nlen x nlen tiles of size nfrag x nfrag where nlen*nfrag=n
+//simple kernel for matrix matrix multiplication on flat arrays of size nxn, executed on nlen x nlen tiles of size nfrag x nfrag where nlen*nfrag=n. This is just a stand-in for the Tensor Core kernel used to multiply matrices
 __global__ void matmul(double* A,double* B,double* C, int n);
 
-__global__ void convmult(double* A,double* B,double* C_aux);
-//convmult2(double* A,double* B,double* C_aux);
+//convmult takes flattened nxn matrices of p-doubles A,B and computes each matrix product A_i*B_j for parts i and j respectively of A and B, then accumulates the result to an nxn matrix of pxp grids C_aux. The matrix products can be done tiled with tile size nfrag
+//Once the matrix products are computed, convadd adds them together as part of the convolution process
+__global__ void convmult(double* A,double* B,double* C_aux,int n,int p,int nfrag);
 __global__ void convadd(double* C,double* C_aux);
 
 //vector<vector<double>> manualconvmult(vector<vector<double>> A,vector<vector<double>> B,int n,int p, int nfrag);
