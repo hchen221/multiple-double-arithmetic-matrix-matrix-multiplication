@@ -141,9 +141,7 @@ __global__ void convmult(double* A,double* B,double* C_aux,int n,int p,int nfrag
 
 }
 
-__global__ void convadd(double* C,double* C_aux) { // C is n^2*p (parts form rows form columns), C_aux is n^2*p^2 (row parts form column parts form rows form columns)
-    int p = gridDim.x;
-    int n = blockDim.x;
+__global__ void convadd(double* C,double* C_aux,int n,int p) { // C is n^2*p (parts form rows form columns), C_aux is n^2*p^2 (row parts form column parts form rows form columns)
     int i = blockIdx.x;
     int I = threadIdx.x;
     int J = threadIdx.y;
@@ -160,40 +158,40 @@ __global__ void convadd(double* C,double* C_aux) { // C is n^2*p (parts form row
 
 /*This function treats the matrices of p-doubles as a vector of the p matrices in order to perform the convolution
  */
-/*
-vector<vector<double>> manualconvmult(vector<vector<double>> A,vector<vector<double>> B,int n,int p, int nfrag) {
-    vector<vector<double>> C;
-    int nlen = n/nfrag;
-    for (int i=0;i<p;i++) {
-	vector<double> Ci = zeros(n,1);
-	C.push_back(Ci);
-	for (int j=0;j<=i;j++) {
-	    double* Ax;
-	    double* By;
-	    double* Cxy;
-            
-	    cudaMalloc((void**)&Ax,n*n*sizeof(double));
-	    cudaMemcpy(Ax,A[j].data(),n*n*sizeof(double),cudaMemcpyHostToDevice);
-	    cudaMalloc((void**)&By,n*n*sizeof(double));
-	    cudaMemcpy(By,B[i-j].data(),n*n*sizeof(double),cudaMemcpyHostToDevice);
-	    cudaMalloc((void**)&Cxy,n*n*sizeof(double));
-	    cudaMemcpy(Cxy,C[i].data(),n*n*sizeof(double),cudaMemcpyHostToDevice);
+vector<double> manualconvmult(vector<double> A,vector<double> B,int n,int p, int nfrag) {
+    vector<double> C_aux = zeros(n,p*p);
+    vector<double> C = zeros(n,p);
+    
+    double* A_d;
+    double* B_d;
+    double* C_aux_d;
+    double* C_d;
 
-	    dim3 gridSize(nlen,nlen);
-	    dim3 blockSize(nfrag,nfrag);
-	    matmul<<<gridSize,blockSize>>>(Ax,By,Cxy,n);
+    cudaMalloc((void**)&A_d,n*n*p*sizeof(double));
+    cudaMalloc((void**)&B_d,n*n*p*sizeof(double));
+    cudaMalloc((void**)&C_aux_d,n*n*p*p*sizeof(double));
+    cudaMalloc((void**)&C_d,n*n*p*sizeof(double));
 
-	    cudaMemcpy(C[i].data(),Cxy,n*n*sizeof(double),cudaMemcpyDeviceToHost);
-	}
-    }
+    cudaMemcpy(A_d,A.data(),n*n*p*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMemcpy(B_d,B.data(),n*n*p*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMemcpy(C_aux_d,C_aux.data(),n*n*p*p*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMemcpy(C_d,C.data(),n*n*p*sizeof(double),cudaMemcpyHostToDevice);
+
+    dim3 gridSize(p,p);
+    dim3 flatSize(p,1);
+    dim3 blockSize(n,n);
+    dim3 haha1(1,1);
+
+    convmult<<<gridSize,haha1>>>(A_d,B_d,C_aux_d,n,p,nfrag);
+    convadd<<<flatSize,blockSize>>>(C_aux_d,C_d,n,p);
+
+    cudaMemcpy(C.data(),C_d,n*n*p*sizeof(double),cudaMemcpyDeviceToHost);
+
     return C;
 }
-*/
 
 /*This is a naive implementation which computes the convolutions within the kernel, using nxn blocks and px1 threads per block. Use for comparison purposes*/
-__global__ void dotconvbutbetter(double* A,double* B,double* C) {
-    int n = gridDim.x;
-    int p = blockDim.x;
+__global__ void dotconvbutbetter(double* A,double* B,double* C,int n,int p) {
     int I = blockIdx.x;
     int J = blockIdx.y;
     int i = threadIdx.x;
@@ -212,7 +210,8 @@ __global__ void dotconvbutbetter(double* A,double* B,double* C) {
     }
 }
 
-vector<vector<double>> directdotconv(vector<double> A,vector<double> B,vector<double> C, int n, int p) {
+vector<double> directdotconv(vector<double> A,vector<double> B, int n, int p) {
+    vector<double> C = zeros(n,p);
     double* Ad;
     double* Bd;
     double* Cd;
@@ -226,10 +225,10 @@ vector<vector<double>> directdotconv(vector<double> A,vector<double> B,vector<do
 
     dim3 gridSize(n,n);
     dim3 blockSize(p,1);
-    dotconvbutbetter<<<gridSize,blockSize>>>(Ad,Bd,Cd);
+    dotconvbutbetter<<<gridSize,blockSize>>>(Ad,Bd,Cd,n,p);
 
     cudaMemcpy(C.data(),Cd,n*n*p*sizeof(double),cudaMemcpyDeviceToHost);
 
-    return splitp(C,p);
+    return C;
 }
 
