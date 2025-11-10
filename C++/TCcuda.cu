@@ -114,16 +114,18 @@ __global__ void convmult(double* A,double* B,double* C_aux,int n,int p,int nfrag
     int j = blockIdx.y;
     // Want to compute A_i[I,:]*B_j[:,J], C_aux_{i,j}[I,J], capital letters denote matrix entries, lowercase denote parts of the p-double
     if (j <= i) {
-        double* Ax = new double[n];
-        double* By = new double[n];
-        double* Cxy = new double[n];
+	__shared__ double Ax[16*16];
+        __shared__ double By[16*16];
+        __shared__ double Cxy[16*16];
 
         for (int I=0;I<n;I++) {
 	    for (int J=0;J<n;J++) {
 	        Ax[I*n+J] = A[I*n*p+J*p+j]; // take the jth part of A
        	        By[I*n+J] = B[I*n*p+J*p+i-j]; // take the i-j th part of B
 	        Cxy[I*n+J] = C_aux[I*n*p*p+J*p*p+i*p+j]; // Locate the i,j position in C_aux
+		__syncthreads();
     	    }
+	    __syncthreads();
         }
 
         int nlen = n/nfrag;
@@ -134,10 +136,11 @@ __global__ void convmult(double* A,double* B,double* C_aux,int n,int p,int nfrag
         for (int I=0;I<n;I++) {
             for (int J=0;J<n;J++) {
                 C_aux[I*n*p*p+J*p*p+i*p+j] = Cxy[I*n+J]; // Locate the i,j position in C_aux
+		__syncthreads();
             }
+	    __syncthreads();
         }
     }
-    __syncthreads();
 
 }
 
@@ -174,8 +177,8 @@ vector<double> manualconvmult(vector<double> A,vector<double> B,int n,int p, int
 
     cudaMemcpy(A_d,A.data(),n*n*p*sizeof(double),cudaMemcpyHostToDevice);
     cudaMemcpy(B_d,B.data(),n*n*p*sizeof(double),cudaMemcpyHostToDevice);
-    cudaMemcpy(C_aux_d,C_aux.data(),n*n*p*p*sizeof(double),cudaMemcpyHostToDevice);
     cudaMemcpy(C_d,C.data(),n*n*p*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMemcpy(C_aux_d,C_aux.data(),n*n*p*p*sizeof(double),cudaMemcpyHostToDevice);
 
     dim3 gridSize(p,p);
     dim3 flatSize(p,1);
@@ -184,9 +187,8 @@ vector<double> manualconvmult(vector<double> A,vector<double> B,int n,int p, int
 
     convmult<<<gridSize,haha1>>>(A_d,B_d,C_aux_d,n,p,nfrag);
     convadd<<<flatSize,blockSize>>>(C_aux_d,C_d,n,p);
-
+    
     cudaMemcpy(C.data(),C_d,n*n*p*sizeof(double),cudaMemcpyDeviceToHost);
-
     return C;
 }
 
@@ -205,8 +207,10 @@ __global__ void dotconvbutbetter(double* A,double* B,double* C,int n,int p) {
                 a = 0;
                 b = 0;
             }
+	    __syncthreads();
             C[I*n*p+J*p+i] += a*b;
         }
+	__syncthreads();
     }
 }
 
@@ -219,16 +223,17 @@ vector<double> directdotconv(vector<double> A,vector<double> B, int n, int p) {
     cudaMalloc((void**)&Ad,n*n*p*sizeof(double));
     cudaMalloc((void**)&Bd,n*n*p*sizeof(double));
     cudaMalloc((void**)&Cd,n*n*p*sizeof(double));
+    
     cudaMemcpy(Ad,A.data(),n*n*p*sizeof(double),cudaMemcpyHostToDevice);
     cudaMemcpy(Bd,B.data(),n*n*p*sizeof(double),cudaMemcpyHostToDevice);
     cudaMemcpy(Cd,C.data(),n*n*p*sizeof(double),cudaMemcpyHostToDevice);
+    
 
     dim3 gridSize(n,n);
     dim3 blockSize(p,1);
     dotconvbutbetter<<<gridSize,blockSize>>>(Ad,Bd,Cd,n,p);
-
+    
     cudaMemcpy(C.data(),Cd,n*n*p*sizeof(double),cudaMemcpyDeviceToHost);
-
     return C;
 }
 

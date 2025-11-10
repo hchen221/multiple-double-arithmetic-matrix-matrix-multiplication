@@ -187,13 +187,23 @@ vector<double> zeros(int n, int p) {
     return A;
 }
 
+void matmul2(vector<double> A,vector<double> B,vector<double> &C, int n) {
+    for (int i=0;i<n;i++) {
+	for (int j=0;j<n;j++) {
+            for (int k=0;k<n;k++) {
+                C[i*n+j] += A[i*n+k]*B[k*n+j];
+	    }
+	}
+    }
+}
+
 void convmult2(vector<double> A,vector<double> B,vector<double> &C_aux, int n, int p) {
-	for (int i=0;i<p;i++) {
-		for (int j=0;j<p;j++) {
-			for (int I=0;I<n;I++) {
-				for (int J=0;J<n;J++) {
-					for (int K=0;K<n;K++) {
-						C_aux[I*n*p*p+J*p*p+i*p+j] += A[I*n*p+K*p+i]*B[K*n*p+J*p+j];                                                                             }                                                                }                                                                }                                                                }                                                                }                                                                }                                                                             
+    for (int i=0;i<p;i++) {
+        for (int j=0;j<p;j+++) {
+	                
+        }
+    }
+}
 
 void convadd2(vector<double> &C,vector<double> &C_aux, int n, int p) {
 	for (int i=0;i<p;i++) {

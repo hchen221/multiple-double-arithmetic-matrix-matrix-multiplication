@@ -4,9 +4,9 @@
 using namespace std;
 
 int main() {
-    int p = 4;
-    int n = 64;
-    int nfrag = 8;
+    int p = 2;
+    int n = 16;
+    int nfrag = 4;
     int expmin = 0;
     int expmax = 0;
 
@@ -18,12 +18,20 @@ int main() {
     
     vector<double> C1 = manualconvmult(A8,B8,n,4*p,nfrag);
     cout << "Convolutions on matrix products? Computed." << endl;
-    vector<double> C2 = directdotconv(A8,B8,n,4*p);
-    cout << "Direct dot product convolutions? Calculated." << endl;
-
     cout << "C[1,1]? (";
     for (int i=0;i<4*p;i++) {
         cout << C1[i];
+        if (i<4*p-1) {
+            cout << ",";
+        }
+    }
+    cout << ")" << endl;
+
+    vector<double> C2 = directdotconv(A8,B8,n,4*p);
+    cout << "Direct dot product convolutions? Calculated." << endl;
+    cout << "C[1,1]? (";
+    for (int i=0;i<4*p;i++) {
+        cout << C2[i];
 	if (i<4*p-1) {
 	    cout << ",";
 	}
