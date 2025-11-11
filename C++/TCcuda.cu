@@ -1,7 +1,10 @@
 #include "TCcuda.h"
 #include "floatybits.h"
-//#include "floatybits.cpp"
+#include <stdio.h>
 #include <iostream>
+//#include <mma.h>
+
+//using namespace nvcuda;
 
 /*
 Assume matrices have a flat representation by default
@@ -27,96 +30,111 @@ vector<double> zeros(int n, int p) {
     return A;
 }
 
-
 /*
-C++ doesn't seem to have nice slicing like in Julia, so matslice(A,ind) is a stand-in for A[ind]
-*/
-vector<double> matslice(vector<double> A,vector<int> ind) {
-    vector<double> A_sub;
-    for (int i=0;i<ind.size();i++) {
-        A_sub.push_back(A[ind[i]]);
-    }
-    return A_sub;
-}
-
-/*
-part(x,j,p) returns the jth part of a p-double vector x component wise
-*/
-vector<double> part(vector<double> x, int j, int p) {
-    vector<double> xj;
-    for (int i=j;i<x.size();i+=p) {
-        xj.push_back(x[i]);
-    }
-    return xj;
-}
-
-/*
-Given an nxn matrix A of p doubles flattened
-A[ent(n,p,i,j)] returns A[i,j]
-A[row(n,p,i)] returns A[i,:]
-A[rowslice(n,p,i,j1,j2)] returns A[i,j1:j2]
-A[col(n,p,j)] returns A[:,j]
-A[frag(n,p,i1,i2,j1,j2)] returns A[i1:i2,j1:j2]
-All still in flattened form
-The jth part of the p double component wise could be taken simply by x[j:p:end]
-*/
-vector<int> ent(int n, int p, int i, int j) {
-    vector<int> ind;
-    for (int k=i*n*p+j*p;k<=i*n*p+(j+1)*p-1;k++) {
-        ind.push_back(k);
-    }
-    return ind;
-}
-vector<int> row(int n, int p, int i) {
-    vector<int> ind;
-    for (int k=i*n*p;k<=(i+1)*n*p-1;k++) {
-        ind.push_back(k);
-    }
-    return ind;
-}
-vector<int> rowslice(int n, int p, int i, int j1, int j2) {
-    vector<int> ind1 = row(n,p,i);
-    vector<int> ind;
-    for (int k=j1*p;k<=(j2+1)*p-1;k++) {
-        ind.push_back(k);
-    }
-    return ind;
-}
-vector<int> col(int n, int p, int j) {
-    vector<int> ind;
-    for (int i=0;i<n;i++) {
-        vector<int> ind2 = ent(n,p,i,j);
-        ind.insert(ind.end(),ind2.begin(),ind2.end());
-    }
-    return ind;
-}
-vector<int> frag(int n, int p, int i1, int i2, int j1, int j2) {
-    vector<int> ind;
-    for (int i=i1;i<=i2;i++) {
-        vector<int> ind2 = rowslice(n,p,i,j1,j2);
-        ind.insert(ind.end(),ind2.begin(),ind2.end());
-    }
-    return ind;
-}
-
 __global__ void matmul(double* A,double* B,double* C,int n) {
-    int i = blockIdx.x*blockDim.x+threadIdx.x;
-    int j = blockIdx.y*blockDim.y+threadIdx.y;
-    for (int k=0;k<n;k++) {
-	C[i*n+j]+=A[i*n+k]*B[k*n+j];
+    int I = blockIdx.x;
+    int J = blockIdx.y;
+    printf("    Computing the (%d,%d) block of C\n",I,J);
+    
+    __shared__ double AI[16*16];
+    __shared__ double BJ[16*16];
+    __shared__ double CIJ[16*16];
+
+    // CIJ will be updated as the kernel executes to store the final result of AI*BJ
+    for (int i=0;i<16;i++) {
+	for (int j=0;j<16;j++) {
+	    CIJ[16*i+j] = C[(16*I+i)*n+(16*J+j)];
+	}
     }
+
+    for (int K=0;K<n/16;K++) {
+        // load in the appropriate fragments into shared memory
+	for (int i=0;i<16;i++) {
+	    for (int j=0;j<16;j++) {
+		AI[16*i+j] = A[(16*I+i)*n+(16*K+j)];
+		BJ[16*i+j] = B[(16*K+i)*n+(16*J+j)];
+	    }
+	}
+        
+	// Define and load the Tensor Core fragments
+        wmma::fragment<wmma::matrix_a,16,16,16,double,wmma::row_major> A_frag;
+        wmma::fragment<wmma::matrix_b,16,16,16,double,wmma::row_major> B_frag;
+        wmma::fragment<wmma::accumulator,16,16,16,double> C_frag;
+        wmma::load_matrix_sync(A_frag,AI,16);
+        wmma::load_matrix_sync(B_frag,BJ,16);
+        wmma::load_matrix_sync(C_frag,CIJ,16);
+
+	// Perform the matrix product
+        wmma::mma_sync(C_frag,A_frag,B_frag,C_frag);
+
+        // Copy the result back to CIJ
+        wmma::store_matrix_sync(CIJ,C_frag,16,wmma::mem_row_major);
+    }
+    for (int i=0;i<16;i++) {
+	for (int j=0;j<16;j++) {
+            C[(16*I+i)*n+(16*J+j)] += CIJ[16*i+j];
+	}
+    }
+
+    printf("    C[I,J] = %f\n",C[(16*I)*n+16*J]);
+}
+*/
+
+__global__ void badmul(double* A,double* B,double* C, int n) {
+    int I = blockIdx.x;
+    int J = blockIdx.y;
+    printf("    Computing the (%d,%d) block of C\n",I,J);
+
+    __shared__ double AI[16*16];
+    __shared__ double BJ[16*16];
+    __shared__ double CIJ[16*16];
+
+    // CIJ will be updated as the kernel executes to store the final result of AI*BJ
+    for (int i=0;i<16;i++) {
+        for (int j=0;j<16;j++) {
+            CIJ[16*i+j] = C[(16*I+i)*n+(16*J+j)];
+        }
+    }
+
+    for (int K=0;K<n/16;K++) {
+        // load in the appropriate fragments into shared memory
+        for (int i=0;i<16;i++) {
+            for (int j=0;j<16;j++) {
+                AI[16*i+j] = A[(16*I+i)*n+(16*K+j)];
+                BJ[16*i+j] = B[(16*K+i)*n+(16*J+j)];
+            }
+        }
+        
+	// execute the matrix multiplication
+	for (int x=0;x<16;x++) {
+	    for (int y=0;y<16;y++) {
+		for (int z=0;z<16;z++) {
+		    CIJ[16*x+y] += AI[16*x+z]*BJ[16*z+y];
+		}
+	    }
+	}
+
+    }
+    for (int i=0;i<16;i++) {
+        for (int j=0;j<16;j++) {
+            C[(16*I+i)*n+(16*J+j)] += CIJ[16*i+j];
+        }
+    }
+
+    printf("    C[I,J] = %f\n",C[(16*I)*n+16*J]);
 }
 
-/*convmult executes p^2 threads in a single block where thread (i,j) computes the matrix product of A_i*B_j, where the result gets accumulated to C_aux_{i,j}. n is the size of the matrix, nfrag is the size of the tile for the matrix products, and p is the number of double parts
+/*convmult executes p^2 threads in a single block where thread (i,j) computes the matrix product of A_i*B_j, where the result gets accumulated to C_aux_{i,j}. n is the size of the matrix, nfrag=16 is the size of the tile for the matrix products, and p is the number of double parts
  */
-__global__ void convmult(double* A,double* B,double* C_aux,int n,int p,int nfrag) { // A,B are n^2*p (parts form rows form columns), C_aux is n^2*p^2 (row parts form column parts for rows form columns)
+__global__ void convmult(double* A,double* B,double* C_aux,int n,int p) { // A,B are n^2*p (parts form rows form columns), C_aux is n^2*p^2 (row parts form column parts for rows form columns)
     int i = blockIdx.x;
     int j = blockIdx.y;
+    printf("convmult\n");
     // Want to compute A_i[I,:]*B_j[:,J], C_aux_{i,j}[I,J], capital letters denote matrix entries, lowercase denote parts of the p-double
     if (j <= i) {
-	__shared__ double Ax[16*16];
-        __shared__ double By[16*16];
-        __shared__ double Cxy[16*16];
+	extern __shared__ double Ax[];
+        extern __shared__ double By[];
+        extern __shared__ double Cxy[];
 
         for (int I=0;I<n;I++) {
 	    for (int J=0;J<n;J++) {
@@ -128,10 +146,10 @@ __global__ void convmult(double* A,double* B,double* C_aux,int n,int p,int nfrag
 	    __syncthreads();
         }
 
-        int nlen = n/nfrag;
+        int nlen = n/16;
         dim3 gridSize(nlen,nlen);
-        dim3 blockSize(nfrag,nfrag);
-        matmul<<<gridSize,blockSize>>>(Ax,By,Cxy,n);
+	dim3 haha1(1,1);
+        badmul<<<gridSize,haha1>>>(Ax,By,Cxy,n);
 
         for (int I=0;I<n;I++) {
             for (int J=0;J<n;J++) {
@@ -140,11 +158,13 @@ __global__ void convmult(double* A,double* B,double* C_aux,int n,int p,int nfrag
             }
 	    __syncthreads();
         }
+	printf("Filled back C_aux, C_aux_{i,j}[0,0]=%f\n",C_aux[i*p+j]);
     }
 
 }
 
 __global__ void convadd(double* C,double* C_aux,int n,int p) { // C is n^2*p (parts form rows form columns), C_aux is n^2*p^2 (row parts form column parts form rows form columns)
+    printf("convadd\n");
     int i = blockIdx.x;
     int I = threadIdx.x;
     int J = threadIdx.y;
@@ -156,12 +176,13 @@ __global__ void convadd(double* C,double* C_aux,int n,int p) { // C is n^2*p (pa
 	}
 	__syncthreads();
     }
+    printf("C[I*n*p+J*p+i]=%f\n",C[I*n*p+J*p+i]);
 
 }
 
 /*This function treats the matrices of p-doubles as a vector of the p matrices in order to perform the convolution
  */
-vector<double> manualconvmult(vector<double> A,vector<double> B,int n,int p, int nfrag) {
+vector<double> manualconvmult(vector<double> A,vector<double> B,int n,int p) {
     vector<double> C_aux = zeros(n,p*p);
     vector<double> C = zeros(n,p);
     
@@ -185,7 +206,7 @@ vector<double> manualconvmult(vector<double> A,vector<double> B,int n,int p, int
     dim3 blockSize(n,n);
     dim3 haha1(1,1);
 
-    convmult<<<gridSize,haha1>>>(A_d,B_d,C_aux_d,n,p,nfrag);
+    convmult<<<gridSize,haha1,n*n*sizeof(double)>>>(A_d,B_d,C_aux_d,n,p);
     convadd<<<flatSize,blockSize>>>(C_aux_d,C_d,n,p);
     
     cudaMemcpy(C.data(),C_d,n*n*p*sizeof(double),cudaMemcpyDeviceToHost);
