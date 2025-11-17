@@ -5,7 +5,7 @@ using namespace std;
 
 int main() {
     int p = 2;
-    int n = 16;
+    int n = 32;
     int expmin = 0;
     int expmax = 0;
 
