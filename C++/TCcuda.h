@@ -2,9 +2,15 @@
 #define _TCFLAT_
 
 #include "floatybits.h"
-//#include <mma.h>
+/*
+#include <stdio.h>
+#include <curand.h>
+#include <cublas_v2.h>
 
-//using namespace nvcuda;
+#include <mma.h>
+
+using namespace nvcuda;
+*/
 
 /*
 Assume matrices have a flat representation by default

@@ -3,17 +3,12 @@
 #include <cmath>
 using namespace std;
 
-int main() {
-    int p = 2;
-    int n = 32;
-    int expmin = 0;
-    int expmax = 0;
-
+void test(int p,int n,int expmin,int expmax) {
     vector<double> A = mat(n,p,expmin,expmax);
     vector<double> B = mat(n,p,expmin,expmax);
     vector<double> A8 = split4pd(A);
     vector<double> B8 = split4pd(B);
-    cout << "A,B in R^{" << n << "x" << n << "}, entries of "<< p << "-doubles\nTiles of size 16\n\n";
+    cout << "A,B in R^{" << n << "x" << n << "}, entries of "<< p << "-doubles\nTiles of size " << nfrag << "\n\n";
     
     vector<double> C1 = manualconvmult(A8,B8,n,4*p);
     cout << "Convolutions on matrix products? Computed." << endl;
@@ -44,11 +39,12 @@ int main() {
 	}
     }
     cout << "Max error? " << max_err << endl;
-
-    return 0;
-
 }
 
+int main() {
+    test(2,32,0,0);
+    return 0;
+}
 
 
 

@@ -84,21 +84,68 @@ __global__ void matmul(double* A,double* B,double* C,int n) {
 
 // convmult executed on pxp blocks of nlen x nlen threads, where n=nlen*nfrag with nfrag=16
 __global__ void convmult(double* A,double* B,double* C_aux,int n,int p) {
+    //wmma::fragment<wmma::matrix_a, nfrag, nfrag, nfrag, double, wmma::row_major> A_frag;
+    //wmma::fragment<wmma::matrix_b, nfrag, nfrag, nfrag, double, wmma::row_major> B_frag;
+    //wmma::fragment<wmma::accumulator, nfrag, nfrag, nfrag, double> C_frag;
+
     int i = blockIdx.x;
     int j = blockIdx.y;
     int I = threadIdx.x;
     int J = threadIdx.y;
     // Compute the [I,J] block of A_i*B_j
+
+    __shared__ double AI[nfrag*nfrag];
+    __shared__ double BJ[nfrag*nfrag];
+    __shared__ double CIJ[nfrag*nfrag];
+
+    for (int x=0;x<nfrag;x++) {
+        for (int y=0;y<nfrag;y++) {
+            CIJ[nfrag*x+y] = 0;
+        }
+    }
+
     for (int K=0;K<n/nfrag;K++) {
 	// With Tensor Cores, would load fragments and perform the matrix products here
 	for (int x=0;x<nfrag;x++) {
+	    for (int y=0;y<nfrag;y++) {
+		AI[nfrag*x+y] = A[(nfrag*I+x)*n*p+(nfrag*K+y)*p+i];
+		BJ[nfrag*x+y] = B[(nfrag*K+x)*n*p+(nfrag*J+y)*p+j];
+		__syncthreads();
+	    }
+	}
+	/*
+        wmma::load_matrix_sync(A_frag,AI,nfrag);
+        wmma::load_matrix_sync(B_frag,BJ,nfrag);
+        wmma::load_matrix_sync(C_frag,CIJ,nfrag);
+	__syncthreads();
+	// Perform the matrix product
+        wmma::mma_sync(C_frag,A_frag,B_frag,C_frag);
+	__syncthreads();
+        // Copy the result back to CIJ
+        wmma::store_matrix_sync(CIJ,C_frag,nfrag,wmma::mem_row_major);
+	__syncthreads();
+	for (int x=0;x<nfrag;x++) {
+	    for (int y=0;y<nfrag;y++) {
+                C_aux[(nfrag*I+x)*n*p*p+(nfrag*J+y)*p*p+i*p+j] += CIJ[nfrag*x+y];
+		__syncthreads();
+	    }
+        }
+	*/
+        
+	for (int x=0;x<nfrag;x++) {
             for (int y=0;y<nfrag;y++) {
 		for (int z=0;z<nfrag;z++) {
-		    C_aux[(nfrag*I+x)*n*p*p+(nfrag*J+y)*p*p+i*p+j] += A[(nfrag*I+x)*n*p+(nfrag*K+z)*p+i]*B[(nfrag*K+z)*n*p+(nfrag*J+y)*p+j];
+		    CIJ[nfrag*x+y] += AI[nfrag*x+z]*BJ[nfrag*z+y];
 		    __syncthreads();
 		}
 	    }
-	}
+	}	
+    }
+    for (int x=0;x<nfrag;x++) {
+        for (int y=0;y<nfrag;y++) {
+            C_aux[(nfrag*I+x)*n*p*p+(nfrag*J+y)*p*p+i*p+j] += CIJ[nfrag*x+y];
+	    __syncthreads();
+        }
     }
 }
 
