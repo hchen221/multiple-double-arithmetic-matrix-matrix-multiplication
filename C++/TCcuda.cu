@@ -236,7 +236,7 @@ vector<double> manualconvmult(vector<double> A,vector<double> B,int n,int p) {
     dim3 tileBlock(nlen,nlen);
 
     convmult2<<<gridSize,nlen>>>(A_d,B_d,C_aux_d,n,p);
-    convadd<<<flatSize,blockSize>>>(C_aux_d,C_d,n,p);
+    convadd<<<flatSize,blockSize>>>(C_d,C_aux_d,n,p);
     
     cudaMemcpy(C.data(),C_d,n*n*p*sizeof(double),cudaMemcpyDeviceToHost);
     return C;

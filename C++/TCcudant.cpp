@@ -198,30 +198,45 @@ void matmul2(vector<double> A,vector<double> B,vector<double> &C, int n) {
 }
 
 void convmult2(vector<double> A,vector<double> B,vector<double> &C_aux, int n, int p) {
-    for (int i=0;i<p;i++) {
-        for (int j=0;j<p;j+++) {
-	                
-        }
+    int nlen = n/16;
+    for (int i=0;i<p;i++) { for (int j=0;j<p;j++) { for (int I=0;I<nlen;I++) { for (int J=0;J<nlen;J++) {
+// Compute the [I,J] block of A_i*B_j
+    for (int K=0;K<n/16;K++) {
+	// With Tensor Cores, would load fragments and perform the matrix products here
+	for (int x=0;x<16;x++) {
+            for (int y=0;y<16;y++) {
+		for (int z=0;z<16;z++) {
+		    C_aux[(16*I+x)*n*p*p+(16*J+y)*p*p+i*p+j] += A[(16*I+x)*n*p+(16*K+z)*p+i]*B[(16*K+z)*n*p+(16*J+y)*p+j];
+		}
+	    }
+	}
     }
+    }}}}
 }
 
 void convadd2(vector<double> &C,vector<double> &C_aux, int n, int p) {
-	for (int i=0;i<p;i++) {
-		for (int I=0;I<n;I++) {
-			for (int J=0;J<n;J++) {
-				for (int j=0;j<=i;j++) {
-	C[I*n*p+J*p+i] += C_aux[I*n*p*p+J*p*p+j*p+(i-j)];
-                                }
-                        }
-                }
-        }
+    for (int i=0;i<p;i++) { for (int I=0;I<n;I++) { for (int J=0;J<n;J++) {
+    for (int j=0;j<p;j++) {
+	if (j<=i) {
+	    C[I*n*p+J*p+i] += C_aux[I*n*p*p+J*p*p+j*p+(i-j)];
+	}
+    }
+    }}}
 }
 
-void dotconvbutworse(vector<double> A,vector<double> B,vector<double> &C, int n, int p) {
-        for (int I=0;I<n;I++) {
-                for (int J=0;J<n;J++) {
-                        for (int i=0;i<p;i++) {
-                                for (int k=0;k<n;k++) {
+vector<double> manualconvmult(vector<double> A,vector<double> B,int n,int p) {
+    vector<double> C_aux = zeros(n,p*p);
+    vector<double> C = zeros(n,p);
+
+    convmult2(A,B,C_aux,n,p);
+    convadd2(C,C_aux,n,p);
+    
+    return C;
+}
+
+void dotconvbutbetter(vector<double> A,vector<double> B,vector<double> &C,int n,int p) {
+    for (int I=0;I<n;I++) { for (int J=0;J<n;J++) { for (int i=0;i<p;i++) {
+    for (int k=0;k<n;k++) {
         for (int j=0;j<p;j++) {
             double a,b;
             if (j<=i) {
@@ -234,39 +249,59 @@ void dotconvbutworse(vector<double> A,vector<double> B,vector<double> &C, int n,
             C[I*n*p+J*p+i] += a*b;
         }
     }
-                        }
-                }
-        }
+    }}}
+}
+
+vector<double> directdotconv(vector<double> A,vector<double> B, int n, int p) {
+    vector<double> C = zeros(n,p);
+
+    dotconvbutbetter(A,B,C,n,p);
+
+    return C;
 }
 
 int main() {
     
-    int p = 4;
-    int n = 128;
-    int nfrag = 16;
+    int p = 2;
+    int n = 16;
     int expmin = 0;
     int expmax = 0;
-    
-    
+
     vector<double> A = mat(n,p,expmin,expmax);
     vector<double> B = mat(n,p,expmin,expmax);
     vector<double> A8 = split4pd(A);
     vector<double> B8 = split4pd(B);
-    vector<double> C8 = zeros(n,4*p);
-    vector<double> C_aux = zeros(n,4*p*4*p);
-    vector<double> C_worse = zeros(n,4*p);
+    cout << "A,B in R^{" << n << "x" << n << "}, entries of "<< p << "-doubles\nTiles of size 16\n\n";
     
-    convmult2(A8,B8,C_aux,n,4*p);
-    convadd2(C8,C_aux,n,4*p);
-    dotconvbutworse(A8,B8,C_worse,n,4*p);
-    
-     double max_err = 0;
-    for (int k=0;k<n*n*4*p;k++) {
-        //cout << C8[k] << ',';
-        if (abs(C8[k]-C_worse[k]) > max_err) {
-            max_err = abs(C8[k]-C_worse[k]);
+    vector<double> C1 = manualconvmult(A8,B8,n,4*p);
+    cout << "Convolutions on matrix products? Computed." << endl;
+    cout << "C[1,1]? (";
+    for (int i=0;i<4*p;i++) {
+        cout << C1[i];
+        if (i<4*p-1) {
+            cout << ",";
         }
     }
-    cout << "Max err? " << max_err << endl;
+    cout << ")" << endl;
+
+    vector<double> C2 = directdotconv(A8,B8,n,4*p);
+    cout << "Direct dot product convolutions? Calculated." << endl;
+    cout << "C[1,1]? (";
+    for (int i=0;i<4*p;i++) {
+        cout << C2[i];
+	if (i<4*p-1) {
+	    cout << ",";
+	}
+    }
+    cout << ")" << endl;
+    
+    double max_err = 0;
+    for (int i=0;i<n*n*4*p;i++) {
+	if (max_err<abs(C1[i]-C2[i])) {
+	    max_err = abs(C1[i]-C2[i]);
+	}
+    }
+    cout << "Max error? " << max_err << endl;
+
     return 0;
 }
