@@ -166,8 +166,8 @@ vector<double> split4pd(vector<double> x) {
 }
 
 
-vector<vector<double>> splitp(vector<double> A,int p) {
-    vector<vector<double>> Ap;
+vector<double> splitp(vector<double> A,int p) {
+    vector<double> Ap;
     for (int i=0;i<p;i++) {
 	vector<double> Ai;
 	int j=i;
@@ -175,7 +175,7 @@ vector<vector<double>> splitp(vector<double> A,int p) {
             Ai.push_back(A[j]);
 	    j += p;
 	}
-	Ap.push_back(Ai);
+	Ap.insert(Ap.end(),Ai.begin(),Ai.end());
     }
     return Ap;
 }

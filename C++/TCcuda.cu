@@ -6,8 +6,6 @@
 
 //using namespace nvcuda;
 
-const int nfrag = 16;
-
 /*
 Assume matrices have a flat representation by default
 mat(n,p) returns a flattened nxn matrix of random p doubles
@@ -94,58 +92,29 @@ __global__ void convmult(double* A,double* B,double* C_aux,int n,int p) {
     int J = threadIdx.y;
     // Compute the [I,J] block of A_i*B_j
 
-    __shared__ double AI[nfrag*nfrag];
-    __shared__ double BJ[nfrag*nfrag];
-    __shared__ double CIJ[nfrag*nfrag];
-
-    for (int x=0;x<nfrag;x++) {
-        for (int y=0;y<nfrag;y++) {
-            CIJ[nfrag*x+y] = 0;
-        }
-    }
-
     for (int K=0;K<n/nfrag;K++) {
 	// With Tensor Cores, would load fragments and perform the matrix products here
 	for (int x=0;x<nfrag;x++) {
-	    for (int y=0;y<nfrag;y++) {
-		AI[nfrag*x+y] = A[(nfrag*I+x)*n*p+(nfrag*K+y)*p+i];
-		BJ[nfrag*x+y] = B[(nfrag*K+x)*n*p+(nfrag*J+y)*p+j];
-		__syncthreads();
+            for (int y=0;y<nfrag;y++) {
+		for (int z=0;z<nfrag;z++) {
+		    C_aux[i*n*n*p+j*n*n+(nfrag*I+x)*n+(nfrag*J+y)] += A[i*n*n+(nfrag*I+x)*n+(nfrag*K+z)]*B[j*n*n+(nfrag*K+z)*n+(nfrag*J+y)];
+		    __syncthreads();
+		}
 	    }
 	}
 	/*
-        wmma::load_matrix_sync(A_frag,AI,nfrag);
-        wmma::load_matrix_sync(B_frag,BJ,nfrag);
-        wmma::load_matrix_sync(C_frag,CIJ,nfrag);
+        wmma::load_matrix_sync(A_frag,A+i*n*n+(I*nfrag)*n+J*nfrag,nfrag);
+        wmma::load_matrix_sync(B_frag,B+j*n*n+(I*nfrag)*n+J*nfrag,nfrag);
+        wmma::load_matrix_sync(C_frag,C_aux+i*n*n*p+j*n*n+(I*nfrag)*n+J*nfrag,nfrag);
 	__syncthreads();
 	// Perform the matrix product
         wmma::mma_sync(C_frag,A_frag,B_frag,C_frag);
 	__syncthreads();
         // Copy the result back to CIJ
-        wmma::store_matrix_sync(CIJ,C_frag,nfrag,wmma::mem_row_major);
+        wmma::store_matrix_sync(C_frag,C_aux+i*n*n*p+j*n*n+(I*nfrag)*n+J*nfrag,C_frag,nfrag,wmma::mem_row_major);
 	__syncthreads();
-	for (int x=0;x<nfrag;x++) {
-	    for (int y=0;y<nfrag;y++) {
-                C_aux[(nfrag*I+x)*n*p*p+(nfrag*J+y)*p*p+i*p+j] += CIJ[nfrag*x+y];
-		__syncthreads();
-	    }
-        }
 	*/
         
-	for (int x=0;x<nfrag;x++) {
-            for (int y=0;y<nfrag;y++) {
-		for (int z=0;z<nfrag;z++) {
-		    CIJ[nfrag*x+y] += AI[nfrag*x+z]*BJ[nfrag*z+y];
-		    __syncthreads();
-		}
-	    }
-	}	
-    }
-    for (int x=0;x<nfrag;x++) {
-        for (int y=0;y<nfrag;y++) {
-            C_aux[(nfrag*I+x)*n*p*p+(nfrag*J+y)*p*p+i*p+j] += CIJ[nfrag*x+y];
-	    __syncthreads();
-        }
     }
 }
 
@@ -155,7 +124,7 @@ __global__ void convadd(double* C,double* C_aux,int n,int p) { // C is n^2*p (pa
     int J = threadIdx.y;
     for (int j=0;j<p;j++) {
 	if (j<=i) {
-	    C[I*n*p+J*p+i] += C_aux[I*n*p*p+J*p*p+j*p+(i-j)];
+	    C[i*n*n+I*n+J] += C_aux[j*n*n*p+(i-j)*n*n+I*n+J];
 	}
 	__syncthreads();
     }
@@ -204,14 +173,14 @@ __global__ void dotconvbutbetter(double* A,double* B,double* C,int n,int p) {
         for (int j=0;j<p;j++) {
             double a,b;
             if (j<=i) {
-                a = A[I*n*p+k*p+j];
-                b = B[k*n*p+J*p+(i-j)];
+                a = A[j*n*n+I*n+k];
+                b = B[(i-j)*n*n+k*n+J];
             } else {
                 a = 0;
                 b = 0;
             }
 	    __syncthreads();
-            C[I*n*p+J*p+i] += a*b;
+            C[i*n*n+I*n+J] += a*b;
         }
 	__syncthreads();
     }

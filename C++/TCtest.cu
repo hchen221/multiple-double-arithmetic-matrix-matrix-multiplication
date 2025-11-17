@@ -6,15 +6,15 @@ using namespace std;
 void test(int p,int n,int expmin,int expmax) {
     vector<double> A = mat(n,p,expmin,expmax);
     vector<double> B = mat(n,p,expmin,expmax);
-    vector<double> A8 = split4pd(A);
-    vector<double> B8 = split4pd(B);
+    vector<double> A8 = splitp(split4pd(A),4*p);
+    vector<double> B8 = splitp(split4pd(B),4*p);
     cout << "A,B in R^{" << n << "x" << n << "}, entries of "<< p << "-doubles\nTiles of size " << nfrag << "\n\n";
     
     vector<double> C1 = manualconvmult(A8,B8,n,4*p);
     cout << "Convolutions on matrix products? Computed." << endl;
     cout << "C[1,1]? (";
     for (int i=0;i<4*p;i++) {
-        cout << C1[i];
+        cout << C1[i*n*n];
         if (i<4*p-1) {
             cout << ",";
         }
@@ -25,7 +25,7 @@ void test(int p,int n,int expmin,int expmax) {
     cout << "Direct dot product convolutions? Calculated." << endl;
     cout << "C[1,1]? (";
     for (int i=0;i<4*p;i++) {
-        cout << C2[i];
+        cout << C2[i*n*n];
 	if (i<4*p-1) {
 	    cout << ",";
 	}
@@ -42,7 +42,7 @@ void test(int p,int n,int expmin,int expmax) {
 }
 
 int main() {
-    test(2,32,0,0);
+    test(2,16,0,0);
     return 0;
 }
 

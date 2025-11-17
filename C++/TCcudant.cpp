@@ -202,16 +202,35 @@ void matmul2(vector<double> A,vector<double> B,vector<double> &C, int n) {
 void convmult2(vector<double> A,vector<double> B,vector<double> &C_aux, int n, int p) {
     int nlen = n/nfrag;
     for (int i=0;i<p;i++) { for (int j=0;j<p;j++) { for (int I=0;I<nlen;I++) { for (int J=0;J<nlen;J++) {
-// Compute the [I,J] block of A_i*B_j
+    double AI[nfrag*nfrag];
+    double BJ[nfrag*nfrag];
+    double CIJ[nfrag*nfrag];
+
+    for (int x=0;x<nfrag;x++) {
+        for (int y=0;y<nfrag;y++) {
+            CIJ[nfrag*x+y] = 0;
+        }
+    }
+
     for (int K=0;K<n/nfrag;K++) {
-	// With Tensor Cores, would load fragments and perform the matrix products here
+	for (int x=0;x<nfrag;x++) {
+	    for (int y=0;y<nfrag;y++) {
+		AI[nfrag*x+y] = A[(nfrag*I+x)*n*p+(nfrag*K+y)*p+i];
+		BJ[nfrag*x+y] = B[(nfrag*K+x)*n*p+(nfrag*J+y)*p+j];
+	    }
+	}
 	for (int x=0;x<nfrag;x++) {
             for (int y=0;y<nfrag;y++) {
 		for (int z=0;z<nfrag;z++) {
-		    C_aux[(nfrag*I+x)*n*p*p+(nfrag*J+y)*p*p+i*p+j] += A[(nfrag*I+x)*n*p+(nfrag*K+z)*p+i]*B[(nfrag*K+z)*n*p+(nfrag*J+y)*p+j];
+		    CIJ[nfrag*x+y] += AI[nfrag*x+z]*BJ[nfrag*z+y];
 		}
 	    }
-	}
+	}	
+    }
+    for (int x=0;x<nfrag;x++) {
+        for (int y=0;y<nfrag;y++) {
+            C_aux[(nfrag*I+x)*n*p*p+(nfrag*J+y)*p*p+i*p+j] += CIJ[nfrag*x+y];
+        }
     }
     }}}}
 }
@@ -265,7 +284,7 @@ vector<double> directdotconv(vector<double> A,vector<double> B, int n, int p) {
 int main() {
     
     int p = 2;
-    int n = 16;
+    int n = 32;
     int expmin = 0;
     int expmax = 0;
 

@@ -11,7 +11,7 @@
 
 using namespace nvcuda;
 */
-
+const int nfrag = 16;
 /*
 Assume matrices have a flat representation by default
 mat(n,p) returns a flattened nxn matrix of random p doubles
