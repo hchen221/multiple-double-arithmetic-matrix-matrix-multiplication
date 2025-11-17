@@ -5,6 +5,8 @@
 #include <cmath>
 using namespace std;
 
+const int nfrag = 4;
+
 int val_bits(vector<int> bits) {
     int s = 0;
     for (int i=0;i<bits.size();i++)
@@ -198,15 +200,15 @@ void matmul2(vector<double> A,vector<double> B,vector<double> &C, int n) {
 }
 
 void convmult2(vector<double> A,vector<double> B,vector<double> &C_aux, int n, int p) {
-    int nlen = n/16;
+    int nlen = n/nfrag;
     for (int i=0;i<p;i++) { for (int j=0;j<p;j++) { for (int I=0;I<nlen;I++) { for (int J=0;J<nlen;J++) {
 // Compute the [I,J] block of A_i*B_j
-    for (int K=0;K<n/16;K++) {
+    for (int K=0;K<n/nfrag;K++) {
 	// With Tensor Cores, would load fragments and perform the matrix products here
-	for (int x=0;x<16;x++) {
-            for (int y=0;y<16;y++) {
-		for (int z=0;z<16;z++) {
-		    C_aux[(16*I+x)*n*p*p+(16*J+y)*p*p+i*p+j] += A[(16*I+x)*n*p+(16*K+z)*p+i]*B[(16*K+z)*n*p+(16*J+y)*p+j];
+	for (int x=0;x<nfrag;x++) {
+            for (int y=0;y<nfrag;y++) {
+		for (int z=0;z<nfrag;z++) {
+		    C_aux[(nfrag*I+x)*n*p*p+(nfrag*J+y)*p*p+i*p+j] += A[(nfrag*I+x)*n*p+(nfrag*K+z)*p+i]*B[(nfrag*K+z)*n*p+(nfrag*J+y)*p+j];
 		}
 	    }
 	}
@@ -263,7 +265,7 @@ vector<double> directdotconv(vector<double> A,vector<double> B, int n, int p) {
 int main() {
     
     int p = 2;
-    int n = 32;
+    int n = 16;
     int expmin = 0;
     int expmax = 0;
 

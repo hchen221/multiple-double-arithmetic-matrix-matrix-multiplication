@@ -6,6 +6,8 @@
 
 //using namespace nvcuda;
 
+const int nfrag = 16;
+
 /*
 Assume matrices have a flat representation by default
 mat(n,p) returns a flattened nxn matrix of random p doubles
@@ -36,47 +38,47 @@ __global__ void matmul(double* A,double* B,double* C,int n) {
     int J = blockIdx.y;
     printf("    Computing the (%d,%d) block of C\n",I,J);
     
-    __shared__ double AI[16*16];
-    __shared__ double BJ[16*16];
-    __shared__ double CIJ[16*16];
+    __shared__ double AI[nfrag*nfrag];
+    __shared__ double BJ[nfrag*nfrag];
+    __shared__ double CIJ[nfrag*nfrag];
 
     // CIJ will be updated as the kernel executes to store the final result of AI*BJ
-    for (int i=0;i<16;i++) {
-	for (int j=0;j<16;j++) {
-	    CIJ[16*i+j] = C[(16*I+i)*n+(16*J+j)];
+    for (int i=0;i<nfrag;i++) {
+	for (int j=0;j<nfrag;j++) {
+	    CIJ[nfrag*i+j] = C[(nfrag*I+i)*n+(nfrag*J+j)];
 	}
     }
 
-    for (int K=0;K<n/16;K++) {
+    for (int K=0;K<n/nfrag;K++) {
         // load in the appropriate fragments into shared memory
-	for (int i=0;i<16;i++) {
-	    for (int j=0;j<16;j++) {
-		AI[16*i+j] = A[(16*I+i)*n+(16*K+j)];
-		BJ[16*i+j] = B[(16*K+i)*n+(16*J+j)];
+	for (int i=0;i<nfrag;i++) {
+	    for (int j=0;j<nfrag;j++) {
+		AI[nfrag*i+j] = A[(nfrag*I+i)*n+(nfrag*K+j)];
+		BJ[nfrag*i+j] = B[(nfrag*K+i)*n+(nfrag*J+j)];
 	    }
 	}
         
 	// Define and load the Tensor Core fragments
-        wmma::fragment<wmma::matrix_a,16,16,16,double,wmma::row_major> A_frag;
-        wmma::fragment<wmma::matrix_b,16,16,16,double,wmma::row_major> B_frag;
-        wmma::fragment<wmma::accumulator,16,16,16,double> C_frag;
-        wmma::load_matrix_sync(A_frag,AI,16);
-        wmma::load_matrix_sync(B_frag,BJ,16);
-        wmma::load_matrix_sync(C_frag,CIJ,16);
+        wmma::fragment<wmma::matrix_a,nfrag,nfrag,nfrag,double,wmma::row_major> A_frag;
+        wmma::fragment<wmma::matrix_b,nfrag,nfrag,nfrag,double,wmma::row_major> B_frag;
+        wmma::fragment<wmma::accumulator,nfrag,nfrag,nfrag,double> C_frag;
+        wmma::load_matrix_sync(A_frag,AI,nfrag);
+        wmma::load_matrix_sync(B_frag,BJ,nfrag);
+        wmma::load_matrix_sync(C_frag,CIJ,nfrag);
 
 	// Perform the matrix product
         wmma::mma_sync(C_frag,A_frag,B_frag,C_frag);
 
         // Copy the result back to CIJ
-        wmma::store_matrix_sync(CIJ,C_frag,16,wmma::mem_row_major);
+        wmma::store_matrix_sync(CIJ,C_frag,nfrag,wmma::mem_row_major);
     }
-    for (int i=0;i<16;i++) {
-	for (int j=0;j<16;j++) {
-            C[(16*I+i)*n+(16*J+j)] += CIJ[16*i+j];
+    for (int i=0;i<nfrag;i++) {
+	for (int j=0;j<nfrag;j++) {
+            C[(nfrag*I+i)*n+(nfrag*J+j)] += CIJ[nfrag*i+j];
 	}
     }
 
-    printf("    C[I,J] = %f\n",C[(16*I)*n+16*J]);
+    printf("    C[I,J] = %f\n",C[(nfrag*I)*n+nfrag*J]);
 }
 */
 
@@ -87,18 +89,17 @@ __global__ void convmult(double* A,double* B,double* C_aux,int n,int p) {
     int I = threadIdx.x;
     int J = threadIdx.y;
     // Compute the [I,J] block of A_i*B_j
-    for (int K=0;K<n/16;K++) {
+    for (int K=0;K<n/nfrag;K++) {
 	// With Tensor Cores, would load fragments and perform the matrix products here
-	for (int x=0;x<16;x++) {
-            for (int y=0;y<16;y++) {
-		for (int z=0;z<16;z++) {
-		    C_aux[(16*I+x)*n*p*p+(16*J+y)*p*p+i*p+j] += A[(16*I+x)*n*p+(16*K+z)*p+i]*B[(16*K+z)*n*p+(16*J+y)*p+j];
+	for (int x=0;x<nfrag;x++) {
+            for (int y=0;y<nfrag;y++) {
+		for (int z=0;z<nfrag;z++) {
+		    C_aux[(nfrag*I+x)*n*p*p+(nfrag*J+y)*p*p+i*p+j] += A[(nfrag*I+x)*n*p+(nfrag*K+z)*p+i]*B[(nfrag*K+z)*n*p+(nfrag*J+y)*p+j];
 		    __syncthreads();
 		}
 	    }
 	}
     }
-    __syncthreads();
 }
 
 __global__ void convadd(double* C,double* C_aux,int n,int p) { // C is n^2*p (parts form rows form columns), C_aux is n^2*p^2 (row parts form column parts form rows form columns)
@@ -137,10 +138,10 @@ vector<double> manualconvmult(vector<double> A,vector<double> B,int n,int p) {
     dim3 gridSize(p,p);
     dim3 flatSize(p,1);
     dim3 blockSize(n,n);
-    int nlen = n/16;
+    int nlen = n/nfrag;
     dim3 tileBlock(nlen,nlen);
 
-    convmult<<<gridSize,nlen>>>(A_d,B_d,C_aux_d,n,p);
+    convmult<<<gridSize,tileBlock>>>(A_d,B_d,C_aux_d,n,p);
     convadd<<<flatSize,blockSize>>>(C_d,C_aux_d,n,p);
     
     cudaMemcpy(C.data(),C_d,n*n*p*sizeof(double),cudaMemcpyDeviceToHost);
