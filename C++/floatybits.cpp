@@ -170,10 +170,8 @@ vector<double> splitp(vector<double> A,int p) {
     vector<double> Ap;
     for (int i=0;i<p;i++) {
 	vector<double> Ai;
-	int j=i;
-	while (j<=A.size()) {
-            Ai.push_back(A[j]);
-	    j += p;
+	for (int j=0;j<A.size()/p;j++) {
+	    Ai.push_back(A[p*j+i]);
 	}
 	Ap.insert(Ap.end(),Ai.begin(),Ai.end());
     }

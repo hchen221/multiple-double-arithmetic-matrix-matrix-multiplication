@@ -42,7 +42,7 @@ void test(int p,int n,int expmin,int expmax) {
 }
 
 int main() {
-    test(2,16,0,0);
+    test(2,32,0,0);
     return 0;
 }
 
