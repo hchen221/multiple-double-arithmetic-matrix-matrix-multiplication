@@ -8,7 +8,7 @@ void test(int p,int n,int expmin,int expmax) {
     vector<double> B = mat(n,p,expmin,expmax);
     vector<double> A8 = splitp(split4pd(A),4*p);
     vector<double> B8 = splitp(split4pd(B),4*p);
-    cout << "A,B in R^{" << n << "x" << n << "}, entries of "<< p << "-doubles\nTiles of size " << nfrag << "\n\n";
+    cout << "A,B in R^{" << n << "x" << n << "}, entries of "<< p << "-doubles\n\n";
     
     vector<double> C1 = manualconvmult(A8,B8,n,4*p);
     cout << "Convolutions on matrix products? Computed." << endl;
