@@ -9,9 +9,9 @@ basic:
 
 matmatTC:
 	gcc -c floatybits.cpp
-	nvcc -c -rdc=true TCcuda.cu
-	nvcc -c -rdc=true TCtest.cu
-	nvcc -rdc=true floatybits.o TCcuda.o TCtest.o -o mytest
+	nvcc -c TCcuda.cu
+	nvcc -c TCtest.cu
+	nvcc floatybits.o TCcuda.o TCtest.o -o mytest
 	./mytest
 
 matmatTC2:

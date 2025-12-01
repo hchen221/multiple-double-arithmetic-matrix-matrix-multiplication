@@ -2,16 +2,17 @@
 #define _TCFLAT_
 
 #include "floatybits.h"
-/*
+
 #include <stdio.h>
 #include <curand.h>
 #include <cublas_v2.h>
+#include <cuda_runtime.h>
 
 #include <mma.h>
 
 using namespace nvcuda;
-*/
-const int nfrag = 16;
+
+const int nfrag = 4;
 /*
 Assume matrices have a flat representation by default
 mat(n,p) returns a flattened nxn matrix of random p doubles
