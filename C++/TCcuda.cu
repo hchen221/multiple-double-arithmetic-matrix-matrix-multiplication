@@ -29,12 +29,12 @@ vector<double> zeros(int n, int p) {
 
 // convmult executed on pxp blocks of nlen x nlen threads, where n=nlen*nfrag with nfrag=16
 __global__ void convmult(double* A,double* B,double* C_aux,int n,int p) {
-    /*
+    
     wmma::fragment<wmma::matrix_a, 8,8,4, double, wmma::row_major> A_frag;
     wmma::fragment<wmma::matrix_b, 8,8,4, double, wmma::row_major> B_frag;
     wmma::fragment<wmma::accumulator, 8,8,4, double> C_frag;
     wmma::fill_fragment(C_frag,0.0);
-    */
+    
 
     int i = blockIdx.x;
     int j = blockIdx.y;
@@ -44,7 +44,7 @@ __global__ void convmult(double* A,double* B,double* C_aux,int n,int p) {
 
     for (int K=0;K<n/8;K++) {
 	// With Tensor Cores, would load fragments and perform the matrix products here
-	
+	/*
 	for (int x=0;x<8;x++) {
             for (int y=0;y<4;y++) {
 		for (int z=0;z<8;z++) {
@@ -53,19 +53,18 @@ __global__ void convmult(double* A,double* B,double* C_aux,int n,int p) {
 		}
 	    }
 	}
+	*/
 	
-	/*
         wmma::load_matrix_sync(A_frag,A+i*n*n+(I*8)*n+J*8,8);
         wmma::load_matrix_sync(B_frag,B+j*n*n+(I*8)*n+J*4,8);
-        //wmma::load_matrix_sync(C_frag,C_aux+i*n*n*p+j*n*n+(I*8)*n+J*4,8);
 	__syncthreads();
 	// Perform the matrix product
         wmma::mma_sync(C_frag,A_frag,B_frag,C_frag);
 	__syncthreads();
-	*/
+	
     }
     // Copy the result back to C[I,J]
-    //wmma::store_matrix_sync(C_aux+i*n*n*p+j*n*n+(I*8)*n+J*4,C_frag,8,wmma::mem_row_major);
+    wmma::store_matrix_sync(C_aux+i*n*n*p+j*n*n+(I*8)*n+J*4,C_frag,8,wmma::mem_row_major);
     __syncthreads();
 }
 

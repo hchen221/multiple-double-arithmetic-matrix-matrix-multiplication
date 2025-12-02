@@ -8,9 +8,9 @@ basic:
 	./basicrun
 
 matmatTC:
-	gcc -c floatybits.cpp
-	nvcc -c TCcuda.cu
-	nvcc -c TCtest.cu
+	nvcc -arch=sm_80 -c floatybits.cu
+	nvcc -arch=sm_80 -c TCcuda.cu
+	nvcc -arch=sm_80 -c TCtest.cu
 	nvcc floatybits.o TCcuda.o TCtest.o -o mytest
 	./mytest
 
