@@ -1,4 +1,5 @@
 CUDA=/usr/local/cuda/include
+GPP=/usr/bin/gcc
 
 all: matmatTC
 
@@ -8,10 +9,10 @@ basic:
 	./basicrun
 
 matmatTC:
-	nvcc -arch=sm_80 -c floatybits.cu
-	nvcc -arch=sm_80 -c TCcuda.cu
-	nvcc -arch=sm_80 -c TCtest.cu
-	nvcc floatybits.o TCcuda.o TCtest.o -o mytest
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c floatybits.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCcuda.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCtest.cu
+	nvcc -ccbin=$(GPP) floatybits.o TCcuda.o TCtest.o -o mytest
 	./mytest
 
 matmatTC2:
