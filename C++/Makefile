@@ -4,22 +4,22 @@ GPP=/usr/bin/gcc
 all: matmatTC
 
 basic:
-	nvcc -c basic.cu
-	nvcc basic.o -o basicrun
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c basic.cu
+	nvcc -ccbin=$(GPP) basic.o -o basicrun
 	./basicrun
 
 matmatTC:
-	nvcc -ccbin=$(GPP) -arch=sm_80 -c floatybits.cu
-	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCcuda.cu
-	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCtest.cu
-	nvcc -ccbin=$(GPP) floatybits.o TCcuda.o TCtest.o -o mytest
+	nvcc -ccbin=$(GPP) -rdc=true -arch=sm_80 -c floatybits.cu
+	nvcc -ccbin=$(GPP) -rdc=true -arch=sm_80 -c TCcuda.cu
+	nvcc -ccbin=$(GPP) -rdc=true -arch=sm_80 -c TCtest.cu
+	nvcc -ccbin=$(GPP) -rdc=true floatybits.o TCcuda.o TCtest.o -o mytest
 	./mytest
 
 matmatTC2:
-	gcc -c floatybits.cpp
-	nvcc -c TCcuda.cu
-	nvcc -c TCtest2.cu
-	nvcc floatybits.o TCcuda.o TCtest2.o -o mytest
+	nvcc -c -rdc=true floatybits.cu
+	nvcc -c -rdc=true TCcuda.cu
+	nvcc -c -rdc=true TCtest.cu
+	nvcc -rdc=true floatybits.o TCcuda.o TCtest.o -o mytest
 	./mytest
 
 cudantTC:
@@ -30,5 +30,5 @@ cudantTC:
 clean:
 	rm -f *.o
 	rm mytest
-	rm cudant
 	rm basicrun
+	rm cudant
