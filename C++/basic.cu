@@ -16,8 +16,8 @@ __global__ void mult(double* A,double* B,double* C,int N) {
     wmma::fragment<wmma::accumulator, 8,8,4, double> C_frag;
     wmma::fill_fragment(C_frag,0.0);
 
-    int I = gridDim.x*blockIdx.x+threadIdx.x;
-    int J = gridDim.y*blockIdx.y+threadIdx.y;
+    int I = blockDim.x*blockIdx.x+threadIdx.x;
+    int J = blockDim.y*blockIdx.y+threadIdx.y;
     for (int K=0;K<N;K+=4) {
 	wmma::load_matrix_sync(A_frag,A+I*N+K,8);
         wmma::load_matrix_sync(B_frag,B+K*N+J,4);
