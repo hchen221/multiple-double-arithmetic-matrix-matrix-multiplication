@@ -48,7 +48,7 @@ __global__ void matmul(double* A,double* B,double* C_aux,int n,int p,int I,int J
 	
 	wmma::load_matrix_sync(A_frag,A+I*n*n+i*n+k,8);
         wmma::load_matrix_sync(B_frag,B+J*n*n+k*n+j,4);
-        __syncthreads();
+	__syncthreads();
         // Perform the matrix product
         wmma::mma_sync(C_frag,A_frag,B_frag,C_frag);
         __syncthreads();

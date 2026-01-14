@@ -8,6 +8,15 @@ basic:
 	nvcc -ccbin=$(GPP) basic.o -o basicrun
 	./basicrun
 
+blog:
+	nvcc -o TCGEMM -arch=sm_80 -lcublas -lcurand simpleTensorCoreGEMM.cu
+	./TCGEMM
+
+smTCGemm:
+	nvcc -ccbin=/usr/bin/gcc -O3 -o dmmarun -arch=sm_80 \
+	dmmatest.cu
+	./dmmarun
+
 matmatTC:
 	nvcc -ccbin=$(GPP) -rdc=true -arch=sm_80 -c floatybits.cu
 	nvcc -ccbin=$(GPP) -rdc=true -arch=sm_80 -c TCcuda.cu
@@ -32,3 +41,4 @@ clean:
 	rm mytest
 	rm basicrun
 	rm cudant
+	rm dmmarun
