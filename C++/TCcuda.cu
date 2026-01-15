@@ -27,6 +27,45 @@ vector<double> zeros(int n, int p) {
     return A;
 }
 
+/*bigA(A,n,p) takes an nxn matrix of p-double entries A and returns [A_1,...,A_p] row stacked, formatted row major*/
+vector<double> bigA(vector<double> A,int n,int p) {
+    vector<double> AA;
+    for (int r=0;r<n;r++) {
+	for (int i=0;i<p;i++) {
+	    for (int c=0;c<n;c++) {
+		AA.push_back(A[r*n*p+c*p+i]);
+	    }
+	}
+    }
+    return AA;
+}
+/*bigB(B,n,p) takes an nxn matrix of p-double entries B and returns the following
+  [B_1,B_2,...,B_p]
+  [0  ,B_1,...,B_{p-1}]
+  [.  ,.  ,.  ..  ]
+  [.  ,.  ,.  ,B_1]
+  formatted col major
+ */
+vector<double> bigB(vector<double> B,int n,int p) {
+    vector<double> BB;
+    for (int c=0;c<n,c++) {
+	for (int i=0;i<p;i++) {
+	    for (int j=0;j<p;j++) {
+		if (j<=i) {
+		    for (int r=0;r<n;r++) {
+		        BB.push_back(B[r*n*p+c*p+(i-j)]);
+		    }
+		} else {
+		    for (int r=0;r<n;r++) {
+			BB.push_back(0);
+		    }
+		}
+	    }
+	}
+    }
+    return BB;
+}
+
 __global__ void matmul(double* A,double* B,double* C_aux,int n,int p,int I,int J) {
     
     wmma::fragment<wmma::matrix_a, 8,8,4, double, wmma::row_major> A_frag;

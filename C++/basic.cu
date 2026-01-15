@@ -12,7 +12,7 @@ using namespace std;
 
 __global__ void mult(double* A,double* B,double* C,int N) {
     wmma::fragment<wmma::matrix_a, 8,8,4, double, wmma::row_major> A_frag;
-    wmma::fragment<wmma::matrix_b, 8,8,4, double, wmma::row_major> B_frag;
+    wmma::fragment<wmma::matrix_b, 8,8,4, double, wmma::col_major> B_frag;
     wmma::fragment<wmma::accumulator, 8,8,4, double> C_frag;
     
     //printf("%i\n",warpSize);
@@ -24,12 +24,12 @@ __global__ void mult(double* A,double* B,double* C,int N) {
     
     for (int K=0;K<N;K+=4) {
 	wmma::load_matrix_sync(A_frag,A+I*8*N+K,N);
-        wmma::load_matrix_sync(B_frag,B+K*N+J*8,N);
+        wmma::load_matrix_sync(B_frag,B+J*8*N+K,N);
 	__syncthreads();
 	wmma::mma_sync(C_frag,A_frag,B_frag,C_frag);
 	__syncthreads();
     }
-    wmma::store_matrix_sync(C+I*N*N+J*N,C_frag,N,wmma::mem_row_major);
+    wmma::store_matrix_sync(C+I*8*N+J*8,C_frag,N,wmma::mem_row_major);
 }
 
 int main() {
@@ -58,15 +58,17 @@ int main() {
     cudaMemcpy(B_d,B.data(),N*N*sizeof(double),cudaMemcpyHostToDevice);
     cudaMalloc((void**)&C_d,N*N*sizeof(double));
     cudaMemcpy(C_d,C.data(),N*N*sizeof(double),cudaMemcpyHostToDevice);
-
+    
     dim3 grid;
     dim3 blox(128,4);
     grid.x = (N+(8*128/32-1))/(8*128/32);
     grid.y = (N+(8*4-1))/(8*4);
     
-    mult<<<grid,blox>>>(A_d,B_d,C_d,N);
+    cout << grid.x << ","<< grid.y << endl;
 
-    cudaMemcpy(C.data(),C_d,N*N*sizeof(double),cudaMemcpyDeviceToHost);
+    mult<<<grid,blox>>>(A_d,B_d,C_d,N);
+    
+    cudaMemcpy(C.data(),A_d,N*N*sizeof(double),cudaMemcpyDeviceToHost);
     
     double max_diff = 0;
     

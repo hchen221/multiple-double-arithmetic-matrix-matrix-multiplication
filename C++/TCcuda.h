@@ -23,6 +23,17 @@ zeros(n,p) returns a matrix of all 0's
 */
 vector<double> zeros(int n, int p);
 
+/*bigA(A,n,p) takes an nxn matrix of p-double entries A and returns [A_1,...,A_p] stacked row wise, formatted row major*/
+vector<double> bigA(vector<double> A,int n,int p);
+
+/*bigB(B,n,p) takes an nxn matrix of p-double entries B and returns the following
+  [B_1,B_2,...,B_p]
+  [0  ,B_1,...,B_{p-1}]
+  [.  ,.  ,.  ..  ]
+  [.  ,.  ,.  ,B_1]
+  formatted col major*/
+vector<double> bigB(vector<double> B,int n,int p);
+
 //convmult takes flattened nxn matrices of p-doubles A,B and computes each matrix product A_i*B_j for parts i and j respectively of A and B, then accumulates the result to an nxn matrix of pxp grids C_aux. The matrix products must be tiled with A as 8x4, B as 4x8, and C as 8x8 in order to use tensor core. matmul is a helper function
 //Once the matrix products are computed, convadd adds them together as part of the convolution process
 __global__ void matmul(double* A,double* B,double*C_aux,int n,int p,int I, int J);
