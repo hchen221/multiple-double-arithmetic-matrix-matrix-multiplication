@@ -52,6 +52,8 @@ void test(int expmin,int expmax) {
     
     vector<double> C1 = zeros(n,n,4*p);
 
+    cout << "Setup? Done." << endl;
+
     double* A_d;
     double* B_d;
     double* C_d;
@@ -78,11 +80,23 @@ void test(int expmin,int expmax) {
 
     cudaMemcpy(C1.data(),C_d,M_GLOBAL*N_GLOBAL*sizeof(double),cudaMemcpyDeviceToHost);
 
-    vector<double> C2 = directdotconv(A8,B8,n,4*p);
-    cout << "Direct dot product convolutions? Calculated." << endl;
-    cout << "C[1,1]? (";
+    cout << "Device? Finished." << endl;
+
+    vector<double> C2 = bigA(directdotconv(A8,B8,n,4*p),n,4*p);
+    cout << "Host? Finished." << endl;
+    
+    cout << "Device C[1,1]? (";
     for (int i=0;i<4*p;i++) {
-        cout << C2[i*n*n];
+        cout << C1[i*n];
+        if (i<4*p-1) {
+            cout << ",";
+        }
+    }
+    cout << ")" << endl;
+
+    cout << "Host C[1,1]? (";
+    for (int i=0;i<4*p;i++) {
+        cout << C2[i*n];
 	if (i<4*p-1) {
 	    cout << ",";
 	}
