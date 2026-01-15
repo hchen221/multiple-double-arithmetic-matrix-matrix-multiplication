@@ -48,8 +48,8 @@ vector<double> bigA(vector<double> A,int n,int p) {
  */
 vector<double> bigB(vector<double> B,int n,int p) {
     vector<double> BB;
-    for (int c=0;c<n;c++) {
-	for (int i=0;i<p;i++) {
+    for (int i=0;i<p;i++) {
+	for (int c=0;c<n;c++) {
 	    for (int j=0;j<p;j++) {
 		if (j<=i) {
 		    for (int r=0;r<n;r++) {
