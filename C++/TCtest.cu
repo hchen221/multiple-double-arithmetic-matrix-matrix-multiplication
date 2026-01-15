@@ -1,10 +1,11 @@
 #include "TCcuda.h"
 #include <iostream>
 #include <cmath>
+#include <ctime>
 using namespace std;
 
 #define p 2
-#define n 256
+#define n 1024
 
 #define M 8
 #define N 8
@@ -53,6 +54,8 @@ void test(int expmin,int expmax) {
     vector<double> C1 = zeros(n,n,4*p);
 
     cout << "Setup? Done." << endl;
+    
+    double d0 = (double)clock();
 
     double* A_d;
     double* B_d;
@@ -75,15 +78,19 @@ void test(int expmin,int expmax) {
 
     gridDim.x = (M_GLOBAL + (M*blockDim.x/32-1))/(M*blockDim.x/32);
     gridDim.y = (N_GLOBAL + N*blockDim.y-1)/(N*blockDim.y);
-
+    
     matmul<<<gridDim,blockDim>>>(A_d,B_d,C_d);
-
+     
     cudaMemcpy(C1.data(),C_d,M_GLOBAL*N_GLOBAL*sizeof(double),cudaMemcpyDeviceToHost);
 
-    cout << "Device? Finished." << endl;
+    double df = (double)clock();
 
+    cout << "Device? Finished. Time? " << df-d0 << endl;
+
+    double h0 = (double)clock();
     vector<double> C2 = bigA(directdotconv(A8,B8,n,4*p),n,4*p);
-    cout << "Host? Finished." << endl;
+    double hf = (double)clock();
+    cout << "Host? Finished. Time? " << hf-h0 << endl;
     
     cout << "Device C[1,1]? (";
     for (int i=0;i<4*p;i++) {
