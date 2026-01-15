@@ -19,9 +19,9 @@ mat(n,p) returns a flattened nxn matrix of random p doubles
 vector<double> mat(int n, int p, int expmin=0, int expmax=0);
 
 /*
-zeros(n,p) returns a matrix of all 0's
+zeros(m,n,p) returns a matrix of all 0's
 */
-vector<double> zeros(int n, int p);
+vector<double> zeros(int m,int n, int p);
 
 /*bigA(A,n,p) takes an nxn matrix of p-double entries A and returns [A_1,...,A_p] stacked row wise, formatted row major*/
 vector<double> bigA(vector<double> A,int n,int p);
@@ -33,14 +33,6 @@ vector<double> bigA(vector<double> A,int n,int p);
   [.  ,.  ,.  ,B_1]
   formatted col major*/
 vector<double> bigB(vector<double> B,int n,int p);
-
-//convmult takes flattened nxn matrices of p-doubles A,B and computes each matrix product A_i*B_j for parts i and j respectively of A and B, then accumulates the result to an nxn matrix of pxp grids C_aux. The matrix products must be tiled with A as 8x4, B as 4x8, and C as 8x8 in order to use tensor core. matmul is a helper function
-//Once the matrix products are computed, convadd adds them together as part of the convolution process
-__global__ void matmul(double* A,double* B,double*C_aux,int n,int p,int I, int J);
-__global__ void convmult(double* A,double* B,double* C_aux,int n,int p);
-__global__ void convadd(double* C,double* C_aux,int n,int p);
-//manualconvmult is a vessel that calls upon the convmult and convadd kernels to compute the product C=A*B where A,B are flattened nxn matrices of p-doubles
-vector<double> manualconvmult(vector<double> A,vector<double> B,int n,int p);
 
 //dotconvbutbetter takes in flattened nxn matrices of p-doubles A,B,C and computes C=A*B directly where each inner product involves a convolution on the p-double parts. Executed on nxn blocks of pxp threads
 __global__ void dotconvbutbetter(double* A,double* B,double* C,int n,int p);

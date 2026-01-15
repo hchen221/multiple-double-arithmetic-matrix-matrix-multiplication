@@ -18,10 +18,10 @@ smTCGemm:
 	./dmmarun
 
 matmatTC:
-	nvcc -ccbin=$(GPP) -rdc=true -arch=sm_80 -c floatybits.cu
-	nvcc -ccbin=$(GPP) -rdc=true -arch=sm_80 -c TCcuda.cu
-	nvcc -ccbin=$(GPP) -rdc=true -arch=sm_80 -c TCtest.cu
-	nvcc -ccbin=$(GPP) -rdc=true floatybits.o TCcuda.o TCtest.o -o mytest
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c floatybits.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCcuda.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCtest.cu
+	nvcc -ccbin=$(GPP) floatybits.o TCcuda.o TCtest.o -o mytest
 	./mytest
 
 matmatTC2:
