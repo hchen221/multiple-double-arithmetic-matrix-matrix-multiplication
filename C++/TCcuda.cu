@@ -66,48 +66,73 @@ vector<double> bigB(vector<double> B,int n,int p) {
     return BB;
 }
 
-/*This is a naive implementation which computes the convolutions within the kernel, using nxn blocks and px1 threads per block. Use for comparison purposes*/
-__global__ void dotconvbutbetter(double* A,double* B,double* C,int n,int p) {
-    int I = blockIdx.x;
-    int J = blockIdx.y;
+
+/*ddf functions copied from PHCpack/src/GPU/Norms/double_double_functions.cpp*/
+double ddf_quick_two_sum ( double a, double b, double *err )
+{
+   double s = a + b;
+   *err = b - (s - a);
+   return s;
+}
+
+double ddf_two_sum ( double a, double b, double *err )
+{
+   double s = a + b;
+   double bb = s - a;
+   *err = (a - (s - bb)) + (b - bb);
+   return s;
+}
+
+void ddf_add
+ ( double a_hi, double a_lo, double b_hi, double b_lo,
+   double *c_hi, double *c_lo )
+{
+   double s1, s2, t1, t2;
+
+   s1 = ddf_two_sum(a_hi,b_hi,&s2);
+   t1 = ddf_two_sum(a_lo,b_lo,&t2);
+   s2 += t1;
+   s1 = ddf_quick_two_sum(s1,s2,&s2);
+   s2 += t2;
+   *c_hi = ddf_quick_two_sum(s1,s2,c_lo);
+}
+
+__global__ void renormbigA(double* A,int n,int p) {
     int i = threadIdx.x;
-    for (int k=0;k<n;k++) {
-        for (int j=0;j<p;j++) {
-            double a,b;
-            if (j<=i) {
-                a = A[I*n*p+k*p+j];
-                b = B[k*n*p+J*p+(i-j)];
-            } else {
-                a = 0;
-                b = 0;
-            }
-	    __syncthreads();
-            C[I*n*p+J*p+i] += a*b;
-        }
-	__syncthreads();
+    int j = threadIdx.y;
+    for (int k=0;k<p-1;k++) {
+	double newhi = A[i*n*p+k*n+j]+A[i*n*p+(k+1)*n+j];
+	double newlo = newhi-A[i*n*p+k*n+j];
+	A[i*n*p+k*n+j] = newhi;
+	A[i*n*p+(k+1)*n+j] = newlo;
     }
 }
 
-vector<double> directdotconv(vector<double> A,vector<double> B, int n, int p) {
+vector<double> matmulhost(vector<double> A,vector<double> B, int n, int p) {
     vector<double> C = zeros(n,n,p);
-    double* Ad;
-    double* Bd;
-    double* Cd;
-
-    cudaMalloc((void**)&Ad,n*n*p*sizeof(double));
-    cudaMalloc((void**)&Bd,n*n*p*sizeof(double));
-    cudaMalloc((void**)&Cd,n*n*p*sizeof(double));
-    
-    cudaMemcpy(Ad,A.data(),n*n*p*sizeof(double),cudaMemcpyHostToDevice);
-    cudaMemcpy(Bd,B.data(),n*n*p*sizeof(double),cudaMemcpyHostToDevice);
-    cudaMemcpy(Cd,C.data(),n*n*p*sizeof(double),cudaMemcpyHostToDevice);
-    
-
-    dim3 gridSize(n,n);
-    dim3 blockSize(p,1);
-    dotconvbutbetter<<<gridSize,blockSize>>>(Ad,Bd,Cd,n,p);
-    
-    cudaMemcpy(C.data(),Cd,n*n*p*sizeof(double),cudaMemcpyDeviceToHost);
-    return C;
+    for (int r=0;r<n;r++) {
+	for (int c=0;c<n;c++) {
+            for (int k=0;k<n;k++) {
+		for (int i=0;i<p;i++) {
+		    for (int j=0;j<=i;j++) {
+			C[r*n*p+c*p+i] += A[r*n*p+k*p+j]*B[k*n*p+c*p+(i-j)];
+		    }
+		}	
+	    }
+	}
+    }
+    return bigA(C,n,p);
 }
 
+void renormhost(vector<double> &A,int n,int p) {
+    for (int i=0;i<n;i++) {
+	for (int j=0;j<n;j++) {
+	    for (int k=0;k<p-1;k++) {
+		double newhi = A[i*n*p+k*n+j]+A[i*n*p+(k+1)*n+j];
+		double newlo = newhi-A[i*n*p+k*n+j];
+		A[i*n*p+k*n+j] = newhi;
+		A[i*n*p+(k+1)*n+j] = newlo;
+	    }
+	}
+    }
+}

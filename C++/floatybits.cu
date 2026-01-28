@@ -177,5 +177,3 @@ vector<double> splitp(vector<double> A,int p) {
     }
     return Ap;
 }
-
-
