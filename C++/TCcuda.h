@@ -34,6 +34,15 @@ vector<double> bigA(vector<double> A,int n,int p);
   formatted col major*/
 vector<double> bigB(vector<double> B,int n,int p);
 
+/*bigB2(B,n,p) takes an nxn matrix of p-double entries B and returns an np x np matrix where each pxp block corresponds to an entry of B in the following form
+  [b_1,b_2,...,b_p]
+  [0  ,b_1,...,b_{p-1}]
+  [.  ,.  ,.  ..  ]
+  [.  ,.  ,.  ,b_1]
+ formatter col major 
+*/
+vector<double> bigB2(vector<double> B,int n,int p);
+
 /*ddf functions copied from PHCpack/src/GPU/Norms/double_double_functions.h*/
 double ddf_quick_two_sum ( double a, double b, double *err );
 /*
@@ -80,11 +89,17 @@ void ddf_add
 /*renormbigA takes a matrix of form bigA(A,n,p) and runs on nxn threads in a 1x1 block to renormalize into non overlapping p-doubles component wise*/
 __global__ void renormbigA(double* A,int n,int p);
 
+/*renormA takes an nxn matrix A of p-doubles and runs on nxn threads in a 1x1 block to renormalize into non overlapping p-doubles component wise*/
+__global__ void renormA(double* A,int n,int p);
+
 /*matmulhost(A,B,n,p) takes nxn matrices A,B of p-doubles and computes the product C, all done on the host*/
 vector<double> matmulhost(vector<double> A,vector<double> B, int n, int p);
 
-/*renormhost is equivalent to renormbigA but is done purely on the host*/
+/*renormhost is equivalent to renormA but is done purely on the host*/
 void renormhost(vector<double> &A,int n,int p);
+
+/*renormhostbig is equivalent to renormbigA but is done purely on the host*/
+void renormhostbig(vector<double> &A,int n,int p);
 
 #endif
 

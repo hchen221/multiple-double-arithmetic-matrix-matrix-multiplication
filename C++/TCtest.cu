@@ -47,8 +47,10 @@ void test(int expmin,int expmax) {
     vector<double> B = mat(n,p,expmin,expmax);
     vector<double> A8 = split4pd(A);
     vector<double> B8 = split4pd(B);
-    vector<double> A8D = bigA(A8,n,4*p);
-    vector<double> B8D = bigB(B8,n,4*p);
+    //vector<double> A8D = bigA(A8,n,4*p);
+    //vector<double> B8D = bigB(B8,n,4*p);
+    vector<double> A8D = A8;
+    vector<double> B8D = bigB2(B8,n,4*p);
     cout << "A,B in R^{" << n << "x" << n << "}, entries of "<< p << "-doubles\n\n";
     
     vector<double> C1 = zeros(n,n,4*p);
@@ -80,7 +82,7 @@ void test(int expmin,int expmax) {
     gridDim.y = (N_GLOBAL + N*blockDim.y-1)/(N*blockDim.y);
     
     matmul<<<gridDim,blockDim>>>(A_d,B_d,C_d);
-    
+
     dim3 haha1(1,1);
     dim3 matthread(n,n);
     renormbigA<<<haha1,matthread>>>(C_d,n,4*p);
@@ -101,7 +103,7 @@ void test(int expmin,int expmax) {
     
     cout << "Device C[1,1]? (";
     for (int i=0;i<4*p;i++) {
-        cout << C1[i*n];
+        cout << C1[i];
         if (i<4*p-1) {
             cout << ",";
         }
@@ -110,7 +112,7 @@ void test(int expmin,int expmax) {
 
     cout << "Host C[1,1]? (";
     for (int i=0;i<4*p;i++) {
-        cout << C2[i*n];
+        cout << C2[i];
 	if (i<4*p-1) {
 	    cout << ",";
 	}

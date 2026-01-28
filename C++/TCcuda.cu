@@ -49,23 +49,38 @@ vector<double> bigA(vector<double> A,int n,int p) {
 vector<double> bigB(vector<double> B,int n,int p) {
     vector<double> BB;
     for (int i=0;i<p;i++) {
-	for (int c=0;c<n;c++) {
-	    for (int j=0;j<p;j++) {
-		if (j<=i) {
-		    for (int r=0;r<n;r++) {
-		        BB.push_back(B[r*n*p+c*p+(i-j)]);
-		    }
-		} else {
-		    for (int r=0;r<n;r++) {
-			BB.push_back(0);
-		    }
-		}
-	    }
-	}
+    for (int c=0;c<n;c++) {
+    for (int j=0;j<p;j++) {
+    for (int r=0;r<n;r++) {
+        if (j<=i) {
+            BB.push_back(B[r*n*p+c*p+(i-j)]);
+        } else {
+            BB.push_back(0);
+        }
+    }
+    }
+    }
     }
     return BB;
 }
 
+vector<double> bigB2(vector<double> B,int n, int p) {
+    vector<double> BB;
+    for (int c=0;c<n;c++) {
+    for (int i=0;i<p;i++) {
+    for (int r=0;r<n;r++) {
+    for (int j=0;j<p;j++) {
+        if (j<=i) {
+	    BB.push_back(B[r*n*p+c*p+(i-j)]);
+	} else {
+	    BB.push_back(0);
+        }
+    }
+    }
+    }
+    }
+    return BB;
+}
 
 /*ddf functions copied from PHCpack/src/GPU/Norms/double_double_functions.cpp*/
 double ddf_quick_two_sum ( double a, double b, double *err )
@@ -108,6 +123,17 @@ __global__ void renormbigA(double* A,int n,int p) {
     }
 }
 
+__global__ void renormA(double* A,int n,int p) {
+    int i = threadIdx.x;
+    int j = threadIdx.y;
+    for (int k=0;k<p-1;k++) {
+        double newhi = A[i*n*p+j*p+k]+A[i*n*p+j*p+(k+1)];
+        double newlo = newhi-A[i*n*p+j*p+k];
+        A[i*n*p+j*p+k] = newhi;
+        A[i*n*p+j*p+(k+1)] = newlo;
+    }
+}
+
 vector<double> matmulhost(vector<double> A,vector<double> B, int n, int p) {
     vector<double> C = zeros(n,n,p);
     for (int r=0;r<n;r++) {
@@ -121,18 +147,31 @@ vector<double> matmulhost(vector<double> A,vector<double> B, int n, int p) {
 	    }
 	}
     }
-    return bigA(C,n,p);
+    return C;
 }
 
 void renormhost(vector<double> &A,int n,int p) {
     for (int i=0;i<n;i++) {
 	for (int j=0;j<n;j++) {
 	    for (int k=0;k<p-1;k++) {
-		double newhi = A[i*n*p+k*n+j]+A[i*n*p+(k+1)*n+j];
-		double newlo = newhi-A[i*n*p+k*n+j];
-		A[i*n*p+k*n+j] = newhi;
-		A[i*n*p+(k+1)*n+j] = newlo;
+		double newhi = A[i*n*p+j*p+k]+A[i*n*p+j*p+(k+1)];
+		double newlo = newhi-A[i*n*p+j*p+k];
+		A[i*n*p+j*p+k] = newhi;
+		A[i*n*p+j*p+(k+1)] = newlo;
 	    }
 	}
+    }
+}
+
+void renormhostbig(vector<double> &A,int n,int p) {
+    for (int i=0;i<n;i++) {
+        for (int j=0;j<n;j++) {
+            for (int k=0;k<p-1;k++) {
+                double newhi = A[i*n*p+k*n+j]+A[i*n*p+(k+1)*n+j];
+                double newlo = newhi-A[i*n*p+k*n+j];
+                A[i*n*p+k*n+j] = newhi;
+                A[i*n*p+(k+1)*n+j] = newlo;
+            }
+        }
     }
 }
