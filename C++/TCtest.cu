@@ -84,7 +84,7 @@ void test(int expmin,int expmax) {
     matmul<<<gridDim,blockDim>>>(A_d,B_d,C_d);
 
     cudaMemcpy(C1q.data(),C_d,M_GLOBAL*N_GLOBAL*sizeof(double),cudaMemcpyDeviceToHost);
-    vector<double> C1 = squeeze(C1q,8);
+    vector<double> C1 = squeeze2(C1q,8);
     
     double df = (double)clock();
 
@@ -126,6 +126,9 @@ void test(int expmin,int expmax) {
 }
 
 int main() {
+    int seed = time(NULL);
+    srand(seed);
+    cout << "Seed? " << seed << endl;
     test(0,0);
     return 0;
 }

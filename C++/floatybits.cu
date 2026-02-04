@@ -258,15 +258,3 @@ vector<double> split8pd(vector<double> x) {
     }
     return x8;
 }
-
-vector<double> squeeze(vector<double> x,int q) {
-    vector<double> s;
-    for (int i=0;i<x.size();i+=q) {
-	double part = 0;
-	for (int j=0;j<q;j++) {
-	    part += x[i+j];
-	}
-	s.push_back(part);
-    }
-    return s;
-}

@@ -445,3 +445,17 @@ void renormhostbig(vector<double> &A,int n,int p) {
         }
     }
 }
+
+vector<double> squeeze2(vector<double> x,int q) {
+    vector<double> s;
+    for (int i=0;i<x.size();i+=2*q) {
+        double xhi = x[i];
+        double xlo = 0;
+	for (int j=1;j<2*q;j++) {
+            ddf_inc_d(&xhi,&xlo,x[i+j]);
+	}
+	s.push_back(xhi);
+	s.push_back(xlo);
+    }
+    return s;
+}

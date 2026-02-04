@@ -402,5 +402,8 @@ void renormhost(vector<double> &A,int n,int p);
 /*renormhostbig is equivalent to renormbigA but is done purely on the host*/
 void renormhostbig(vector<double> &A,int n,int p);
 
+/*squeeze takes a matrix of q-split double doubles and condenses them*/
+vector<double> squeeze2(vector<double> x,int q);
+
 #endif
 

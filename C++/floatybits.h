@@ -65,8 +65,4 @@ vector<double> split8(vector<int> bits);
 split8pd(x) applies split8 to a p-double x then returns the combined 8p-double
 */
 vector<double> split8pd(vector<double> x);
-
-/*squeeze takes a matrix of q-split doubles and condenses them*/
-vector<double> squeeze(vector<double> x,int q);
-
 #endif
