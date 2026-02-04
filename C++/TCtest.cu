@@ -5,15 +5,15 @@
 using namespace std;
 
 #define p 2
-#define n 256
+#define n 64
 
 #define M 8
 #define N 8
 #define K 4
 
 #define M_GLOBAL n
-#define N_GLOBAL n*4*p
-#define K_GLOBAL n*4*p
+#define N_GLOBAL n*8*p
+#define K_GLOBAL n*8*p
 
 __global__ void matmul(double *a, double *b, double *c) {
     int warpM = (blockIdx.x * blockDim.x + threadIdx.x) / warpSize;
@@ -45,15 +45,15 @@ __global__ void matmul(double *a, double *b, double *c) {
 void test(int expmin,int expmax) {
     vector<double> A = mat(n,p,expmin,expmax);
     vector<double> B = mat(n,p,expmin,expmax);
-    vector<double> A8 = split4pd(A);
-    vector<double> B8 = split4pd(B);
-    //vector<double> A8D = bigA(A8,n,4*p);
-    //vector<double> B8D = bigB(B8,n,4*p);
+    vector<double> A8 = split8pd(A);
+    vector<double> B8 = split8pd(B);
+    //vector<double> A8D = bigA(A8,n,8*p);
+    //vector<double> B8D = bigB(B8,n,8*p);
     vector<double> A8D = A8;
-    vector<double> B8D = bigB2(B8,n,4*p);
+    vector<double> B8D = bigB2(B8,n,8*p);
     cout << "A,B in R^{" << n << "x" << n << "}, entries of "<< p << "-doubles\n\n";
     
-    vector<double> C1 = zeros(n,n,4*p);
+    vector<double> C1q = zeros(n,n,8*p);
 
     cout << "Setup? Done." << endl;
     
@@ -68,7 +68,7 @@ void test(int expmin,int expmax) {
     cudaMalloc((void**)&B_d,K_GLOBAL*N_GLOBAL*sizeof(double));
     cudaMemcpy(B_d,B8D.data(),K_GLOBAL*N_GLOBAL*sizeof(double),cudaMemcpyHostToDevice);
     cudaMalloc((void**)&C_d,M_GLOBAL*N_GLOBAL*sizeof(double));
-    cudaMemcpy(C_d,C1.data(),M_GLOBAL*N_GLOBAL*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMemcpy(C_d,C1q.data(),M_GLOBAL*N_GLOBAL*sizeof(double),cudaMemcpyHostToDevice);
 
     dim3 gridDim;
     dim3 blockDim;
@@ -83,44 +83,41 @@ void test(int expmin,int expmax) {
     
     matmul<<<gridDim,blockDim>>>(A_d,B_d,C_d);
 
-    dim3 haha1(1,1);
-    dim3 matthread(n,n);
-    renormbigA<<<haha1,matthread>>>(C_d,n,4*p);
-     
-    cudaMemcpy(C1.data(),C_d,M_GLOBAL*N_GLOBAL*sizeof(double),cudaMemcpyDeviceToHost);
+    cudaMemcpy(C1q.data(),C_d,M_GLOBAL*N_GLOBAL*sizeof(double),cudaMemcpyDeviceToHost);
+    vector<double> C1 = squeeze(C1q,8);
     
     double df = (double)clock();
 
     cout << "Device? Finished. Time? " << df-d0 << endl;
 
     double h0 = (double)clock();
-    vector<double> C2 = matmulhost(A8,B8,n,4*p);
+    vector<double> C2 = matmulddf(A,B,n);
     double hf = (double)clock();
 
-    //renormhost(C2,n,4*p);
+    //renormhost(C2,n,p);
 
     cout << "Host? Finished. Time? " << hf-h0 << endl;
     
     cout << "Device C[1,1]? (";
-    for (int i=0;i<4*p;i++) {
+    for (int i=0;i<p;i++) {
         cout << C1[i];
-        if (i<4*p-1) {
+        if (i<p-1) {
             cout << ",";
         }
     }
     cout << ")" << endl;
 
     cout << "Host C[1,1]? (";
-    for (int i=0;i<4*p;i++) {
+    for (int i=0;i<p;i++) {
         cout << C2[i];
-	if (i<4*p-1) {
+	if (i<p-1) {
 	    cout << ",";
 	}
     }
     cout << ")" << endl;
     
     double max_err = 0;
-    for (int i=0;i<n*n*4*p;i++) {
+    for (int i=0;i<n*n*p;i++) {
 	if (max_err<abs(C1[i]-C2[i])) {
 	    max_err = abs(C1[i]-C2[i]);
 	}

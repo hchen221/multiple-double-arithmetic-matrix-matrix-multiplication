@@ -1,6 +1,8 @@
 #ifndef _FLOATYBITS_
 #define _FLOATYBITS_
 
+//#include "../../PHCpack/src/GPU/Norms/double_double_functions.h"
+
 #include <cmath>
 #include <iostream>
 #include <vector>
@@ -54,6 +56,17 @@ split4pd(x) applies split4 to a p-double x then returns the combined 4p-double
 */
 vector<double> split4pd(vector<double> x);
 
-vector<double> splitp(vector<double> A,int p);
+/*
+split8(bits) takes a 64 bit representation on input and returns the quad double in numerical form
+*/
+vector<double> split8(vector<int> bits);
+
+/*
+split8pd(x) applies split8 to a p-double x then returns the combined 8p-double
+*/
+vector<double> split8pd(vector<double> x);
+
+/*squeeze takes a matrix of q-split doubles and condenses them*/
+vector<double> squeeze(vector<double> x,int q);
 
 #endif

@@ -165,15 +165,108 @@ vector<double> split4pd(vector<double> x) {
     return x4;
 }
 
-
-vector<double> splitp(vector<double> A,int p) {
-    vector<double> Ap;
-    for (int i=0;i<p;i++) {
-	vector<double> Ai;
-	for (int j=0;j<A.size()/p;j++) {
-	    Ai.push_back(A[p*j+i]);
-	}
-	Ap.insert(Ap.end(),Ai.begin(),Ai.end());
+vector<double> split8(vector<int> bits) {
+    vector<int> bits1 = bits;
+    vector<int> bits2 = bits;
+    vector<int> bits3 = bits;
+    vector<int> bits4 = bits;
+    vector<int> bits5 = bits;
+    vector<int> bits6 = bits;
+    vector<int> bits7 = bits;
+    for (int i=0;i<52;i++) {
+        if (i<7) {
+            bits2[12+i] = 0;
+            bits3[12+i] = 0;
+            bits4[12+i] = 0;
+            bits5[12+i] = 0;
+            bits6[12+i] = 0;
+            bits7[12+i] = 0;
+        }
+        if (i>=7&&i<14) {
+            bits1[12+i] = 0;
+            bits3[12+i] = 0;
+            bits4[12+i] = 0;
+            bits5[12+i] = 0;
+            bits6[12+i] = 0;
+            bits7[12+i] = 0;
+        }
+        if (i>=14&&i<21) {
+            bits1[12+i] = 0;
+            bits2[12+i] = 0;
+            bits4[12+i] = 0;
+            bits5[12+i] = 0;
+            bits6[12+i] = 0;
+            bits7[12+i] = 0;
+        }
+        if (i>=21&&i<28) {
+            bits1[12+i] = 0;
+            bits2[12+i] = 0;
+            bits3[12+i] = 0;
+            bits5[12+i] = 0;
+            bits6[12+i] = 0;
+            bits7[12+i] = 0;
+        }
+        if (i>=28&&i<34) {
+            bits1[12+i] = 0;
+            bits2[12+i] = 0;
+            bits3[12+i] = 0;
+            bits4[12+i] = 0;
+            bits6[12+i] = 0;
+            bits7[12+i] = 0;
+        }
+        if (i>=34&&i<40) {
+            bits1[12+i] = 0;
+            bits2[12+i] = 0;
+            bits3[12+i] = 0;
+            bits4[12+i] = 0;
+            bits5[12+i] = 0;
+            bits7[12+i] = 0;
+        }
+        if (i>=40) {
+            bits1[12+i] = 0;
+            bits2[12+i] = 0;
+            bits3[12+i] = 0;
+            bits4[12+i] = 0;
+            bits5[12+i] = 0;
+            bits6[12+i] = 0;
+        }
     }
-    return Ap;
+    vector<double> D;
+    double d1 = double_rep(bits1);
+    double d2 = double_rep(bits2);
+    double d3 = double_rep(bits3);
+    double d4 = double_rep(bits4);
+    double d5 = double_rep(bits5);
+    double d6 = double_rep(bits6);
+    double d7 = double_rep(bits7);
+    D.push_back(d1);
+    D.push_back(d2);
+    D.push_back(d3);
+    D.push_back(d4);
+    D.push_back(d5);
+    D.push_back(d6);
+    D.push_back(d7);
+    D.push_back(double_rep(bits)-(d1+d2+d3+d4+d5+d6+d7));
+    return D;
+}
+
+vector<double> split8pd(vector<double> x) {
+    vector<double> x8;
+    for (int i=0;i<x.size();i++) {
+        vector<double> xi8 = split8(bitform(x[i]));
+        x8.insert(x8.end(),xi8.begin(),xi8.end());
+    }
+    return x8;
+}
+
+vector<double> squeeze(vector<double> x,int q) {
+    vector<double> s;
+    for (int i=0;i<x.size();i+=q) {
+	double part = 0;
+	for (int j=0;j<q;j++) {
+	    part += x[i+j];
+	}
+	s.push_back(part);
+    }
+    return s;
 }

@@ -18,6 +18,7 @@ smTCGemm:
 	./dmmarun
 
 matmatTC:
+	gcc -c ../../PHCpack/src/GPU/Norms/double_double_functions.cpp
 	nvcc -ccbin=$(GPP) -arch=sm_80 -c floatybits.cu
 	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCcuda.cu
 	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCtest.cu
