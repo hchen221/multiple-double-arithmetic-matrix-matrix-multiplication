@@ -116,6 +116,20 @@ vector<double> random_pd(int expmin,int expmax,int p) {
     return parts;
 }
 
+void balance4(vector<double> x) {
+    for (int i=0;i<3;i++) {
+	if (x[i+1]==0) {
+	    i+=2;
+	    continue;
+	}
+	int ex;
+	double f = frexp(x[i],&ex);
+	double no = ldexp(1.0,ex-14);
+	x[i] -= no;
+	x[i+1] += no;
+    }
+}
+
 /*
 split4(bits) takes a 64 bit representation on input and returns the quad double in numerical form
 */
@@ -150,6 +164,7 @@ vector<double> split4(vector<int> bits) {
     D.push_back(d2);
     D.push_back(d3);
     D.push_back(double_rep(bits)-(d1+d2+d3));
+    balance4(D);
     return D;
 }
 
@@ -163,6 +178,25 @@ vector<double> split4pd(vector<double> x) {
         x4.insert(x4.end(),xi4.begin(),xi4.end());
     }
     return x4;
+}
+
+void balance8(vector<double> x) {
+    for (int i=0;i<7;i++) {
+        if (x[i+1]==0) {
+            i+=2;
+            continue;
+        }
+        int ex;
+        double f = frexp(x[i],&ex);
+        double no;
+	if (i<3) {
+	    no = ldexp(1.0,ex-8);
+	} else {
+	    no = ldexp(1.0,ex-7);
+	}
+        x[i] -= no;
+        x[i+1] += no;
+    }
 }
 
 vector<double> split8(vector<int> bits) {
@@ -247,6 +281,7 @@ vector<double> split8(vector<int> bits) {
     D.push_back(d6);
     D.push_back(d7);
     D.push_back(double_rep(bits)-(d1+d2+d3+d4+d5+d6+d7));
+    balance8(D);
     return D;
 }
 

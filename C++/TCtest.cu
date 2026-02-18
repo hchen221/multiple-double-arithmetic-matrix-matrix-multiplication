@@ -5,7 +5,7 @@
 using namespace std;
 
 #define p 2
-#define n 64
+#define n 256
 
 #define M 8
 #define N 8

@@ -47,6 +47,11 @@ random_pd(expmin,expmax) returns a random p-double
 vector<double> random_pd(int expmin,int expmax,int p);
 
 /*
+balance4 takes a split 4 double x on input and balances the exponents
+*/
+void balance4(vector<double> x);
+
+/*
 split4(bits) takes a 64 bit representation on input and returns the quad double in numerical form
 */
 vector<double> split4(vector<int> bits);
@@ -55,6 +60,11 @@ vector<double> split4(vector<int> bits);
 split4pd(x) applies split4 to a p-double x then returns the combined 4p-double
 */
 vector<double> split4pd(vector<double> x);
+
+/*
+balance8 takes a split 8 double x on input and balances the exponents
+*/
+void balance8(vector<double> x);
 
 /*
 split8(bits) takes a 64 bit representation on input and returns the quad double in numerical form
