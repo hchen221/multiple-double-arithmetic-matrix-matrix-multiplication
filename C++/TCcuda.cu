@@ -27,15 +27,15 @@ vector<double> zeros(int m,int n, int p) {
     return A;
 }
 
-/*ddf functions copied from PHCpack/arc/GPU/Norms/double_double_functions.cpp*/
-double ddf_quick_two_sum ( double a, double b, double *err )
+/*ddf functions copied and adapted from PHCpack/arc/GPU/Norms/double_double_functions.cpp*/
+__host__ __device__ double ddf_quick_two_sum ( double a, double b, double *err )
 {
    double s = a + b;
    *err = b - (s - a);
    return s;
 }
 
-double ddf_two_sum ( double a, double b, double *err )
+__host__ __device__ double ddf_two_sum ( double a, double b, double *err )
 {
    double s = a + b;
    double bb = s - a;
@@ -43,7 +43,7 @@ double ddf_two_sum ( double a, double b, double *err )
    return s;
 }
 
-void ddf_add
+__host__ __device__ void ddf_add
  ( double a_hi, double a_lo, double b_hi, double b_lo,
    double *c_hi, double *c_lo )
 {
@@ -57,14 +57,14 @@ void ddf_add
    *c_hi = ddf_quick_two_sum(s1,s2,c_lo);
 }
 
-double ddf_quick_two_diff ( double a, double b, double *err )
+__host__ __device__ double ddf_quick_two_diff ( double a, double b, double *err )
 {
    double s = a - b;
    *err = (a - s) - b;
    return s;
 }
 
-double ddf_two_diff ( double a, double b, double *err )
+__host__ __device__ double ddf_two_diff ( double a, double b, double *err )
 {
    double s = a - b;
    double bb = s - a;
@@ -72,13 +72,13 @@ double ddf_two_diff ( double a, double b, double *err )
    return s;
 }
 
-void ddf_minus ( double *a_hi, double *a_lo )
+__host__ __device__ void ddf_minus ( double *a_hi, double *a_lo )
 {
    *a_hi = -(*a_hi);
    *a_lo = -(*a_lo);
 }
 
-void ddf_sub
+__host__ __device__ void ddf_sub
  ( double a_hi, double a_lo, double b_hi, double b_lo,
    double *c_hi, double *c_lo )
 {
@@ -92,7 +92,7 @@ void ddf_sub
    *c_hi = ddf_quick_two_sum(s1,s2,c_lo);
 }
 
-void ddf_sub_dd_d
+__host__ __device__ void ddf_sub_dd_d
  ( double a_hi, double a_lo, double b, double *c_hi, double *c_lo )
 {
    double s1, s2;
@@ -104,7 +104,7 @@ void ddf_sub_dd_d
 
 /********** incrementers, decrementers, and multipliers ****************/
 
-void ddf_inc ( double *a_hi, double *a_lo, double b_hi, double b_lo )
+__host__ __device__ void ddf_inc ( double *a_hi, double *a_lo, double b_hi, double b_lo )
 {
    double s1, s2, t1, t2;
 
@@ -116,7 +116,7 @@ void ddf_inc ( double *a_hi, double *a_lo, double b_hi, double b_lo )
    *a_hi = ddf_quick_two_sum(s1,s2,a_lo);
 }
 
-void ddf_inc_d ( double *a_hi, double *a_lo, double b )
+__host__ __device__ void ddf_inc_d ( double *a_hi, double *a_lo, double b )
 {
    double s1, s2;
 
@@ -125,7 +125,7 @@ void ddf_inc_d ( double *a_hi, double *a_lo, double b )
    *a_hi = ddf_quick_two_sum(s1,s2,a_lo);
 }
 
-void ddf_dec ( double *a_hi, double *a_lo, double b_hi, double b_lo )
+__host__ __device__ void ddf_dec ( double *a_hi, double *a_lo, double b_hi, double b_lo )
 {
    double s1, s2, t1, t2;
 
@@ -137,7 +137,7 @@ void ddf_dec ( double *a_hi, double *a_lo, double b_hi, double b_lo )
    *a_hi = ddf_quick_two_sum(s1,s2,a_lo);
 }
 
-void ddf_dec_d ( double *a_hi, double *a_lo, double b )
+__host__ __device__ void ddf_dec_d ( double *a_hi, double *a_lo, double b )
 {
    double s1, s2;
 
@@ -146,7 +146,7 @@ void ddf_dec_d ( double *a_hi, double *a_lo, double b )
    *a_hi = ddf_quick_two_sum(s1,s2,a_lo);
 }
 
-void ddf_mlt ( double *a_hi, double *a_lo, double b_hi, double b_lo )
+__host__ __device__ void ddf_mlt ( double *a_hi, double *a_lo, double b_hi, double b_lo )
 {
    double p1, p2;
 
@@ -156,7 +156,7 @@ void ddf_mlt ( double *a_hi, double *a_lo, double b_hi, double b_lo )
    *a_hi = ddf_quick_two_sum(p1,p2,a_lo);
 }
 
-void ddf_mlt_d ( double *a_hi, double *a_lo, double b )
+__host__ __device__ void ddf_mlt_d ( double *a_hi, double *a_lo, double b )
 {
    double p1, p2;
 
@@ -167,7 +167,7 @@ void ddf_mlt_d ( double *a_hi, double *a_lo, double b )
 
 /************************ multiplications ********************************/
 
-void ddf_split ( double a, double *hi, double *lo )
+__host__ __device__ void ddf_split ( double a, double *hi, double *lo )
 {
    const double QD_SPLITTER = 134217729.0;            /* 2^27 + 1 */
    const double QD_SPLIT_THRESH = 6.69692879491417e+299; /* 2^996 */
@@ -191,7 +191,7 @@ void ddf_split ( double a, double *hi, double *lo )
    }
 }
 
-double ddf_two_prod ( double a, double b, double *err )
+__host__ __device__ double ddf_two_prod ( double a, double b, double *err )
 {
    double a_hi,a_lo,b_hi,b_lo;
    double p = a*b;
@@ -203,7 +203,7 @@ double ddf_two_prod ( double a, double b, double *err )
    return p;
 }
 
-double ddf_two_sqr ( double a, double *err )
+__host__ __device__ double ddf_two_sqr ( double a, double *err )
 {
    double hi,lo;
    double q = a*a;
@@ -214,7 +214,7 @@ double ddf_two_sqr ( double a, double *err )
    return q;
 }
 
-void ddf_mul
+__host__ __device__ void ddf_mul
  ( double a_hi, double a_lo, double b_hi, double b_lo,
    double *c_hi, double *c_lo )
 {
@@ -225,7 +225,7 @@ void ddf_mul
    *c_hi = ddf_quick_two_sum(p1,p2,c_lo);
 }
 
-void ddf_sqr ( double a_hi, double a_lo, double *b_hi, double *b_lo )
+__host__ __device__ void ddf_sqr ( double a_hi, double a_lo, double *b_hi, double *b_lo )
 {
    double p1, p2;
 
@@ -235,7 +235,7 @@ void ddf_sqr ( double a_hi, double a_lo, double *b_hi, double *b_lo )
    *b_hi = ddf_quick_two_sum(p1,p2,b_lo);
 }
 
-void ddf_mul_d_dd
+__host__ __device__ void ddf_mul_d_dd
  ( double a, double b_hi, double b_lo, double *c_hi, double *c_lo )
 {
    double p1, p2;
@@ -247,7 +247,7 @@ void ddf_mul_d_dd
 
 /*************************** divisions ***************************/
 
-void ddf_div
+__host__ __device__ void ddf_div
  ( double a_hi, double a_lo, double b_hi, double b_lo,
    double *c_hi, double *c_lo )
 {
@@ -267,7 +267,7 @@ void ddf_div
 
 /*************************** sqrt and abs ***************************/
 
-void ddf_sqrt ( double a_hi, double a_lo, double *b_hi, double *b_lo )
+__host__ __device__ void ddf_sqrt ( double a_hi, double a_lo, double *b_hi, double *b_lo )
 {
   /* Use Karp's trick: if x is an approximation to sqrt(a), then
        sqrt(a) = a*x + [a - (a*x)^2] * x / 2   (approx)
@@ -298,7 +298,7 @@ void ddf_sqrt ( double a_hi, double a_lo, double *b_hi, double *b_lo )
    }
 }
 
-void ddf_abs ( double a_hi, double a_lo, double *b_hi, double *b_lo )
+__host__ __device__ void ddf_abs ( double a_hi, double a_lo, double *b_hi, double *b_lo )
 {
    if(a_hi < 0.0)
    {
@@ -457,5 +457,37 @@ vector<double> squeeze2(vector<double> x,int q) {
 	s.push_back(xhi);
 	s.push_back(xlo);
     }
+    return s;
+}
+
+__global__ void pllsqueeze2kernel(double *x,double *s,int q) {
+    int i = threadIdx.x;
+    double xhi = x[2*q*i];
+    double xlo = 0;
+    for (int j=1;j<2*q;j++) {
+	ddf_inc_d(&xhi,&xlo,x[2*q*i+j]);
+    }
+    s[2*i] = xhi;
+    x[2*i+1] = xlo;
+}
+
+vector<double> pllsqueeze2(vector<double> x,int q) {
+    int n = x.size()/(2*q);
+    vector<double> s = zeros(n,1,2*q);
+
+    double* x_d;
+    double* s_d;
+    cudaMalloc((void**)&x_d,n*2*q*sizeof(double));
+    cudaMemcpy(x_d,x.data(),n*2*q*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&s_d,n*2*sizeof(double));
+    cudaMemcpy(s_d,s.data(),n*2*sizeof(double),cudaMemcpyHostToDevice);
+
+    dim3 hahaONE(1,1);
+    dim3 Nx1(n,1);
+
+    pllsqueeze2kernel<<<hahaONE,Nx1>>>(x_d,s_d,q);
+
+    cudaMemcpy(s.data(),s_d,n*2*sizeof(double),cudaMemcpyDeviceToHost);
+
     return s;
 }

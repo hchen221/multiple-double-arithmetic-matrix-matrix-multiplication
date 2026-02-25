@@ -43,9 +43,9 @@ vector<double> bigB(vector<double> B,int n,int p);
 */
 vector<double> bigB2(vector<double> B,int n,int p);
 
-/*ddf functions copied from PHCpack/src/GPU/Norms/double_double_functions.h
+/*ddf functions copied and adapted from PHCpack/src/GPU/Norms/double_double_functions.h
 */
-double ddf_quick_two_sum ( double a, double b, double *err );
+__host__ __device__ double ddf_quick_two_sum ( double a, double b, double *err );
 /*
  * DESCRIPTION :
  *   Assuming |a| >= |b|, returns a+b and in err the error.
@@ -57,7 +57,7 @@ double ddf_quick_two_sum ( double a, double b, double *err );
  *   s        returned sum of a and b.
  *   err      error value, b - (s - a). */
 
-double ddf_two_sum ( double a, double b, double *err );
+__host__ __device__ double ddf_two_sum ( double a, double b, double *err );
 /*
  * DESCRIPTION :
  *   Computes fl(a+b) and err(a+b).
@@ -69,7 +69,7 @@ double ddf_two_sum ( double a, double b, double *err );
  *   s        approximation for the sum of a and b is returned;
  *   err      error of a + b. */
 
-void ddf_add
+__host__ __device__ void ddf_add
  ( double a_hi, double a_lo, double b_hi, double b_lo,
    double *c_hi, double *c_lo );
 /*
@@ -87,7 +87,7 @@ void ddf_add
  *   c_hi     high part of the double double c;
  *   c_lo     low part of the double double c. */
 
-double ddf_quick_two_diff ( double a, double b, double *err );
+__host__ __device__ double ddf_quick_two_diff ( double a, double b, double *err );
 /*
  * DESCRIPTION :
  *   Assuming |a| >= |b|, returns a-b and in err the error.
@@ -99,7 +99,7 @@ double ddf_quick_two_diff ( double a, double b, double *err );
  *   s        returned a minus b.
  *   err      error value, (a - s) - b. */
 
-double ddf_two_diff ( double a, double b, double *err );
+__host__ __device__ double ddf_two_diff ( double a, double b, double *err );
 /*
  * DESCRIPTION :
  *   Computes fl(a-b) and err(a-b).
@@ -111,7 +111,7 @@ double ddf_two_diff ( double a, double b, double *err );
  *   s        approximation for the difference of a with b is returned;
  *   err      error of a - b. */
 
-void ddf_minus ( double *a_hi, double *a_lo );
+__host__ __device__ void ddf_minus ( double *a_hi, double *a_lo );
 /*
  * DESCRIPTION : a = -a, unary minus,
  *   Flips the sign of both high and low parts of the double double a.
@@ -124,7 +124,7 @@ void ddf_minus ( double *a_hi, double *a_lo );
  *   a_hi     high part of the double double -a;
  *   a_hi     low part of the double double -a. */
 
-void ddf_sub
+__host__ __device__ void ddf_sub
  ( double a_hi, double a_lo, double b_hi, double b_lo,
    double *c_hi, double *c_lo );
 /*
@@ -143,7 +143,7 @@ void ddf_sub
  *   c_hi     high part of the double double c;
  *   c_lo     low part of the double double c. */
 
-void ddf_sub_dd_d
+__host__ __device__ void ddf_sub_dd_d
  ( double a_hi, double a_lo, double b, double *c_hi, double *c_lo );
 /*
  * DESCRIPTION : c = a - b.
@@ -161,7 +161,7 @@ void ddf_sub_dd_d
 
 /********** incrementers, decrementers, and multipliers ****************/
 
-void ddf_inc ( double *a_hi, double *a_lo, double b_hi, double b_lo );
+__host__ __device__ void ddf_inc ( double *a_hi, double *a_lo, double b_hi, double b_lo );
 /*
  * DESCRIPTION : a = a + b.
  *   Inplace increment of the double double a (a_hi, a_lo)
@@ -177,7 +177,7 @@ void ddf_inc ( double *a_hi, double *a_lo, double b_hi, double b_lo );
  *   a_hi     high part of the double double a;
  *   a_lo     low part of the double double a. */
 
-void ddf_inc_d ( double *a_hi, double *a_lo, double b );
+__host__ __device__ void ddf_inc_d ( double *a_hi, double *a_lo, double b );
 /*
  * DESCRIPTION : a = a + b.
  *   Inplace increment of the double double a (a_hi, a_lo)
@@ -192,7 +192,7 @@ void ddf_inc_d ( double *a_hi, double *a_lo, double b );
  *   a_hi     high part of the double double a;
  *   a_lo     low part of the double double a. */
 
-void ddf_dec ( double *a_hi, double *a_lo, double b_hi, double b_lo );
+__host__ __device__ void ddf_dec ( double *a_hi, double *a_lo, double b_hi, double b_lo );
 /*
  * DESCRIPTION : a = a - b.
  *   Inplace decrement of the double double a (a_hi, a_lo)
@@ -208,7 +208,7 @@ void ddf_dec ( double *a_hi, double *a_lo, double b_hi, double b_lo );
  *   a_hi     high part of the double double a;
  *   a_lo     low part of the double double a. */
 
-void ddf_dec_d ( double *a_hi, double *a_lo, double b );
+__host__ __device__ void ddf_dec_d ( double *a_hi, double *a_lo, double b );
 /*
  * DESCRIPTION : a = a - b.
  *   Inplace decrement of the double double a (a_hi, a_lo)
@@ -223,7 +223,7 @@ void ddf_dec_d ( double *a_hi, double *a_lo, double b );
  *   a_hi     high part of the double double a;
  *   a_lo     low part of the double double a. */
 
-void ddf_mlt ( double *a_hi, double *a_lo, double b_hi, double b_lo );
+__host__ __device__ void ddf_mlt ( double *a_hi, double *a_lo, double b_hi, double b_lo );
 /*
  * DESCRIPTION : a = a * b.
  *   Inplace multiplication of the double double a (a_hi, a_lo)
@@ -239,7 +239,7 @@ void ddf_mlt ( double *a_hi, double *a_lo, double b_hi, double b_lo );
  *   a_hi     high part of the double double a;
  *   a_lo     low part of the double double a. */
 
-void ddf_mlt_d ( double *a_hi, double *a_lo, double b );
+__host__ __device__ void ddf_mlt_d ( double *a_hi, double *a_lo, double b );
 /*
  * DESCRIPTION : a = a * b.
  *   Inplace multiplication of the double double a (a_hi, a_lo)
@@ -256,7 +256,7 @@ void ddf_mlt_d ( double *a_hi, double *a_lo, double b );
 
 /************************ multiplications ********************************/
 
-void ddf_split ( double a, double *hi, double *lo );
+__host__ __device__ void ddf_split ( double a, double *hi, double *lo );
 /*
  * DESCRIPTION :
  *   Computes high and low word of a.
@@ -268,7 +268,7 @@ void ddf_split ( double a, double *hi, double *lo );
  *   hi       high word of a;
  *   lo       low word of a. */ 
 
-double ddf_two_prod ( double a, double b, double *err );
+__host__ __device__ double ddf_two_prod ( double a, double b, double *err );
 /*
  * DESCRIPTION :
  *   Computes fl(a*b) and err(a*b).
@@ -280,12 +280,12 @@ double ddf_two_prod ( double a, double b, double *err );
  *   p        returned approximation for a*b;
  *   err      error on the approximated product. */
 
-double ddf_two_sqr ( double a, double *err );
+__host__ __device__ double ddf_two_sqr ( double a, double *err );
 /*
  * DESCRIPTION :
  *   Computes fl(a*a) and err(a*a) faster than two_prod. */
 
-void ddf_mul
+__host__ __device__ void ddf_mul
  ( double a_hi, double a_lo, double b_hi, double b_lo,
    double *c_hi, double *c_lo );
 /*
@@ -303,7 +303,7 @@ void ddf_mul
  *   c_hi     high part of the double double c;
  *   c_lo     low part of the double double c. */
 
-void ddf_sqr ( double a_hi, double a_lo, double *b_hi, double *b_lo );
+__host__ __device__ void ddf_sqr ( double a_hi, double a_lo, double *b_hi, double *b_lo );
 /*
  * DESCRIPTION :
  *   Returns in the double double b (b_hi, b_lo) 
@@ -317,7 +317,7 @@ void ddf_sqr ( double a_hi, double a_lo, double *b_hi, double *b_lo );
  *   b_hi     high part of the double double b;
  *   b_lo     low part of the double double b. */
 
-void ddf_mul_d_dd
+__host__ __device__ void ddf_mul_d_dd
  ( double a, double b_hi, double b_lo, double *c_hi, double *c_lo );
 /*
  * DESCRIPTION : c = a * b.
@@ -335,7 +335,7 @@ void ddf_mul_d_dd
 
 /*************************** divisions ***************************/
 
-void ddf_div
+__host__ __device__ void ddf_div
  ( double a_hi, double a_lo, double b_hi, double b_lo,
    double *c_hi, double *c_lo );
 /*
@@ -355,7 +355,7 @@ void ddf_div
 
 /*************************** sqrt ***************************/
 
-void ddf_sqrt ( double a_hi, double a_lo, double *b_hi, double *b_lo );
+__host__ __device__ void ddf_sqrt ( double a_hi, double a_lo, double *b_hi, double *b_lo );
 /*
  * DESCRIPTION :
  *   Returns in the double double b (b_hi, b_lo) 
@@ -369,7 +369,7 @@ void ddf_sqrt ( double a_hi, double a_lo, double *b_hi, double *b_lo );
  *   b_hi     high part of the double double b;
  *   b_lo     low part of the double double b. */
 
-void ddf_abs ( double a_hi, double a_lo, double *b_hi, double *b_lo );
+__host__ __device__ void ddf_abs ( double a_hi, double a_lo, double *b_hi, double *b_lo );
 /*
  * DESCRIPTION :
  *   Returns in the double double b (b_hi, b_lo) the absolute value
@@ -402,8 +402,12 @@ void renormhost(vector<double> &A,int n,int p);
 /*renormhostbig is equivalent to renormbigA but is done purely on the host*/
 void renormhostbig(vector<double> &A,int n,int p);
 
-/*squeeze takes a matrix of q-split double doubles and condenses them*/
+/*squeeze2 takes a matrix of q-split double doubles and condenses them*/
 vector<double> squeeze2(vector<double> x,int q);
+
+/*pllsqueeze2 is a parallel variant of squeeze2, takes an n dimensional vector x of 2q-doubles and places them in an n dimesnional vector of 2-doubles s, uses pllsqueeze2kernel which runs on (1,1) blocks and (n,1) threads*/
+__global__ void pllsqueeze2kernel(double *x,double *s,int q);
+vector<double> pllsqueeze2(vector<double> x,int q);
 
 #endif
 
