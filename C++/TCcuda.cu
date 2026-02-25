@@ -461,14 +461,14 @@ vector<double> squeeze2(vector<double> x,int q) {
 }
 
 __global__ void pllsqueeze2kernel(double *x,double *s,int q) {
-    int i = threadIdx.x;
+    int i = blockDim.x*blockIdx.x+threadIdx.x;
     double xhi = x[2*q*i];
     double xlo = 0;
     for (int j=1;j<2*q;j++) {
 	ddf_inc_d(&xhi,&xlo,x[2*q*i+j]);
     }
     s[2*i] = xhi;
-    x[2*i+1] = xlo;
+    s[2*i+1] = xlo;
 }
 
 vector<double> pllsqueeze2(vector<double> x,int q) {
@@ -482,10 +482,21 @@ vector<double> pllsqueeze2(vector<double> x,int q) {
     cudaMalloc((void**)&s_d,n*2*sizeof(double));
     cudaMemcpy(s_d,s.data(),n*2*sizeof(double),cudaMemcpyHostToDevice);
 
-    dim3 hahaONE(1,1);
-    dim3 Nx1(n,1);
-
-    pllsqueeze2kernel<<<hahaONE,Nx1>>>(x_d,s_d,q);
+    dim3 G;
+    dim3 B;
+    if (n <64) {
+	G.x = 1;
+	G.y = 1;
+	B.x = n;
+	B.y = 1;
+    } else {
+	G.x = n/64; // assume 64|n
+	G.y = 1;
+	B.x = 64;
+	B.y = 1;
+    }
+    
+    pllsqueeze2kernel<<<G,B>>>(x_d,s_d,q);
 
     cudaMemcpy(s.data(),s_d,n*2*sizeof(double),cudaMemcpyDeviceToHost);
 

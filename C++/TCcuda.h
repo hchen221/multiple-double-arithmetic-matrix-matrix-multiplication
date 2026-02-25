@@ -405,7 +405,7 @@ void renormhostbig(vector<double> &A,int n,int p);
 /*squeeze2 takes a matrix of q-split double doubles and condenses them*/
 vector<double> squeeze2(vector<double> x,int q);
 
-/*pllsqueeze2 is a parallel variant of squeeze2, takes an n dimensional vector x of 2q-doubles and places them in an n dimesnional vector of 2-doubles s, uses pllsqueeze2kernel which runs on (1,1) blocks and (n,1) threads*/
+/*pllsqueeze2 is a parallel variant of squeeze2, takes an n dimensional vector x of 2q-doubles and places them in an n dimesnional vector of 2-doubles s, uses pllsqueeze2kernel which uses 1 dimensional tiled threading, partitioning n into 64*/
 __global__ void pllsqueeze2kernel(double *x,double *s,int q);
 vector<double> pllsqueeze2(vector<double> x,int q);
 
