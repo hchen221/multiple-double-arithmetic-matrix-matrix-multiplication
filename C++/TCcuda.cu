@@ -27,292 +27,6 @@ vector<double> zeros(int m,int n, int p) {
     return A;
 }
 
-/*ddf functions copied and adapted from PHCpack/arc/GPU/Norms/double_double_functions.cpp*/
-__host__ __device__ double ddf_quick_two_sum ( double a, double b, double *err )
-{
-   double s = a + b;
-   *err = b - (s - a);
-   return s;
-}
-
-__host__ __device__ double ddf_two_sum ( double a, double b, double *err )
-{
-   double s = a + b;
-   double bb = s - a;
-   *err = (a - (s - bb)) + (b - bb);
-   return s;
-}
-
-__host__ __device__ void ddf_add
- ( double a_hi, double a_lo, double b_hi, double b_lo,
-   double *c_hi, double *c_lo )
-{
-   double s1, s2, t1, t2;
-
-   s1 = ddf_two_sum(a_hi,b_hi,&s2);
-   t1 = ddf_two_sum(a_lo,b_lo,&t2);
-   s2 += t1;
-   s1 = ddf_quick_two_sum(s1,s2,&s2);
-   s2 += t2;
-   *c_hi = ddf_quick_two_sum(s1,s2,c_lo);
-}
-
-__host__ __device__ double ddf_quick_two_diff ( double a, double b, double *err )
-{
-   double s = a - b;
-   *err = (a - s) - b;
-   return s;
-}
-
-__host__ __device__ double ddf_two_diff ( double a, double b, double *err )
-{
-   double s = a - b;
-   double bb = s - a;
-   *err = (a - (s - bb)) - (b + bb);
-   return s;
-}
-
-__host__ __device__ void ddf_minus ( double *a_hi, double *a_lo )
-{
-   *a_hi = -(*a_hi);
-   *a_lo = -(*a_lo);
-}
-
-__host__ __device__ void ddf_sub
- ( double a_hi, double a_lo, double b_hi, double b_lo,
-   double *c_hi, double *c_lo )
-{
-   double s1, s2, t1, t2;
-
-   s1 = ddf_two_diff(a_hi,b_hi,&s2);
-   t1 = ddf_two_diff(a_lo,b_lo,&t2);
-   s2 += t1;
-   s1 = ddf_quick_two_sum(s1,s2,&s2);
-   s2 += t2;
-   *c_hi = ddf_quick_two_sum(s1,s2,c_lo);
-}
-
-__host__ __device__ void ddf_sub_dd_d
- ( double a_hi, double a_lo, double b, double *c_hi, double *c_lo )
-{
-   double s1, s2;
-
-   s1 = ddf_two_diff(a_hi,b,&s2);
-   s2 += a_lo;
-   *c_hi = ddf_quick_two_sum(s1,s2,c_lo);
-}
-
-/********** incrementers, decrementers, and multipliers ****************/
-
-__host__ __device__ void ddf_inc ( double *a_hi, double *a_lo, double b_hi, double b_lo )
-{
-   double s1, s2, t1, t2;
-
-   s1 = ddf_two_sum(*a_hi,b_hi,&s2);
-   t1 = ddf_two_sum(*a_lo,b_lo,&t2);
-   s2 += t1;
-   s1 = ddf_quick_two_sum(s1,s2,&s2);
-   s2 += t2;
-   *a_hi = ddf_quick_two_sum(s1,s2,a_lo);
-}
-
-__host__ __device__ void ddf_inc_d ( double *a_hi, double *a_lo, double b )
-{
-   double s1, s2;
-
-   s1 = ddf_two_sum(*a_hi,b,&s2);
-   s2 += *a_lo;
-   *a_hi = ddf_quick_two_sum(s1,s2,a_lo);
-}
-
-__host__ __device__ void ddf_dec ( double *a_hi, double *a_lo, double b_hi, double b_lo )
-{
-   double s1, s2, t1, t2;
-
-   s1 = ddf_two_diff(*a_hi,b_hi,&s2);
-   t1 = ddf_two_diff(*a_lo,b_lo,&t2);
-   s2 += t1;
-   s1 = ddf_quick_two_sum(s1,s2,&s2);
-   s2 += t2;
-   *a_hi = ddf_quick_two_sum(s1,s2,a_lo);
-}
-
-__host__ __device__ void ddf_dec_d ( double *a_hi, double *a_lo, double b )
-{
-   double s1, s2;
-
-   s1 = ddf_two_diff(*a_hi,b,&s2);
-   s2 += *a_lo;
-   *a_hi = ddf_quick_two_sum(s1,s2,a_lo);
-}
-
-__host__ __device__ void ddf_mlt ( double *a_hi, double *a_lo, double b_hi, double b_lo )
-{
-   double p1, p2;
-
-   p1 = ddf_two_prod(*a_hi,b_hi,&p2);
-   p2 += b_lo * (*a_lo);
-   p2 += b_hi * (*a_hi);
-   *a_hi = ddf_quick_two_sum(p1,p2,a_lo);
-}
-
-__host__ __device__ void ddf_mlt_d ( double *a_hi, double *a_lo, double b )
-{
-   double p1, p2;
-
-   p1 = ddf_two_prod(*a_hi,b,&p2);
-   p2 += *a_lo * b;
-   *a_hi = ddf_quick_two_sum(p1,p2,a_lo);
-}
-
-/************************ multiplications ********************************/
-
-__host__ __device__ void ddf_split ( double a, double *hi, double *lo )
-{
-   const double QD_SPLITTER = 134217729.0;            /* 2^27 + 1 */
-   const double QD_SPLIT_THRESH = 6.69692879491417e+299; /* 2^996 */
-
-   double temp;
-
-   if (a > QD_SPLIT_THRESH || a < -QD_SPLIT_THRESH)
-   {
-      a *= 3.7252902984619140625e-09;  /* 2^-28 */
-      temp = QD_SPLITTER * a;
-      *hi = temp - (temp - a);
-      *lo = a - *hi;
-      *hi *= 268435456.0;  /* 2^28 */
-      *lo *= 268435456.0;  /* 2^28 */
-   }
-   else
-   {
-      temp = QD_SPLITTER * a;
-      *hi = temp - (temp - a);
-      *lo = a - *hi;
-   }
-}
-
-__host__ __device__ double ddf_two_prod ( double a, double b, double *err )
-{
-   double a_hi,a_lo,b_hi,b_lo;
-   double p = a*b;
-
-   ddf_split(a,&a_hi,&a_lo);
-   ddf_split(b,&b_hi,&b_lo);
-   *err = ((a_hi*b_hi - p) + a_hi*b_lo + a_lo*b_hi) + a_lo*b_lo;
-
-   return p;
-}
-
-__host__ __device__ double ddf_two_sqr ( double a, double *err )
-{
-   double hi,lo;
-   double q = a*a;
-
-   ddf_split(a,&hi,&lo);
-   *err = ((hi*hi - q) + 2.0*hi*lo) + lo*lo;
-
-   return q;
-}
-
-__host__ __device__ void ddf_mul
- ( double a_hi, double a_lo, double b_hi, double b_lo,
-   double *c_hi, double *c_lo )
-{
-   double p1, p2;
-
-   p1 = ddf_two_prod(a_hi,b_hi,&p2);
-   p2 += (a_hi * b_lo + a_lo * b_hi);
-   *c_hi = ddf_quick_two_sum(p1,p2,c_lo);
-}
-
-__host__ __device__ void ddf_sqr ( double a_hi, double a_lo, double *b_hi, double *b_lo )
-{
-   double p1, p2;
-
-   p1 = ddf_two_sqr(a_hi,&p2);
-   p2 += 2.0 * a_hi * a_lo;
-   p2 += a_lo * a_lo;
-   *b_hi = ddf_quick_two_sum(p1,p2,b_lo);
-}
-
-__host__ __device__ void ddf_mul_d_dd
- ( double a, double b_hi, double b_lo, double *c_hi, double *c_lo )
-{
-   double p1, p2;
-
-   p1 = ddf_two_prod(a,b_hi,&p2);
-   p2 += (b_lo * a);
-   *c_hi = ddf_quick_two_sum(p1,p2,c_lo);
-}
-
-/*************************** divisions ***************************/
-
-__host__ __device__ void ddf_div
- ( double a_hi, double a_lo, double b_hi, double b_lo,
-   double *c_hi, double *c_lo )
-{
-   double q1, q2, q3;
-   double acc_hi, acc_lo;
-
-   q1 = a_hi/b_hi;                             /* approximate quotient */
-   ddf_mul_d_dd(q1,b_hi,b_lo,&acc_hi,&acc_lo); /* acc = q1*b */
-   ddf_sub(a_hi,a_lo,acc_hi,acc_lo,c_hi,c_lo); /* c = a - q1 * b; */
-   q2 = *c_hi/b_hi;
-   ddf_mul_d_dd(q2,b_hi,b_lo,&acc_hi,&acc_lo); /* acc = q2*b */
-   ddf_dec(c_hi,c_lo,acc_hi,acc_lo);           /* c -= (q2 * b); */
-   q3 = *c_hi/b_hi;
-   *c_hi = ddf_quick_two_sum(q1,q2,c_lo);
-   ddf_inc_d(c_hi,c_lo,q3);                    /* c = ddf_real(q1, q2) + q3; */
-}
-
-/*************************** sqrt and abs ***************************/
-
-__host__ __device__ void ddf_sqrt ( double a_hi, double a_lo, double *b_hi, double *b_lo )
-{
-  /* Use Karp's trick: if x is an approximation to sqrt(a), then
-       sqrt(a) = a*x + [a - (a*x)^2] * x / 2   (approx)
-     The approximation is accurate to twice the accuracy of x.
-     Also, the multiplication (a*x) and [-]*x can be done with
-     only half the precision. */
-
-   if((a_hi == 0.0) && (a_lo == 0.0))
-   {
-      *b_hi = 0.0; *b_lo = 0.0;
-   }
-   else if(a_hi < 0.0)
-   {
-      *b_hi = -1.0; *b_lo = 0.0;
-   }
-   else
-   {
-      const double x = 1.0/sqrt(a_hi);
-      double ax = a_hi*x;
-
-      double sqax_hi,sqax_lo,y_hi,y_lo;
-
-      ddf_sqr(ax,0.0,&sqax_hi,&sqax_lo);
-
-      ddf_sub(a_hi,a_lo,sqax_hi,sqax_lo,&y_hi,&y_lo);
-
-      *b_hi = ddf_two_sum(ax,y_hi*x*0.5,b_lo);
-   }
-}
-
-__host__ __device__ void ddf_abs ( double a_hi, double a_lo, double *b_hi, double *b_lo )
-{
-   if(a_hi < 0.0)
-   {
-      *b_hi = -a_hi;
-      *b_lo = -a_lo;
-   }
-   else
-   {
-      *b_hi = a_hi;
-      *b_lo = a_lo;
-   }
-}
-/*end ddf*/
-
 /*bigA(A,n,p) takes an nxn matrix of p-double entries A and returns [A_1,...,A_p] row stacked, formatted row major*/
 vector<double> bigA(vector<double> A,int n,int p) {
     vector<double> AA;
@@ -390,6 +104,44 @@ __global__ void renormA(double* A,int n,int p) {
     }
 }
 
+__global__ void matmulkernel(double* A,double* B, double* C,int n, int p) {
+    int r = blockIdx.x;
+    int c = blockIdx.y;
+    int i = threadIdx.x;
+    for (int k=0;k<n;k++) {
+        for (int j=0;j<p;j++) {
+	    if (j<=i) {
+		C[r*n*p+c*p+i] += A[r*n*p+k*p+j]*B[k*n*p+c*p+(i-j)];
+	    } else {
+	        C[r*n*p+c*p+i] += 0*0;
+	    }
+	    __syncthreads();
+	}
+    }
+}
+
+vector<double> matmulTCnt(vector<double> A,vector<double> B, int n, int p) {
+    vector<double> C = zeros(n,n,p);
+    
+    double* A_d;
+    double* B_d;
+    double* C_d;
+
+    cudaMalloc((void**)&A_d,n*n*p*sizeof(double));
+    cudaMemcpy(A_d,A.data(),n*n*p*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&B_d,n*n*p*sizeof(double));
+    cudaMemcpy(B_d,B.data(),n*n*p*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&C_d,n*n*p*sizeof(double));
+    cudaMemcpy(C_d,C.data(),n*n*p*sizeof(double),cudaMemcpyHostToDevice);
+
+    dim3 Gr(n,n);
+    dim3 Bl(p,1);
+    matmulkernel<<<Gr,Bl>>>(A_d,B_d,C_d,n,p);
+    cudaMemcpy(C.data(),C_d,n*n*p*sizeof(double),cudaMemcpyDeviceToHost);
+
+    return C;
+}
+
 vector<double> matmulhost(vector<double> A,vector<double> B, int n, int p) {
     vector<double> C = zeros(n,n,p);
     for (int r=0;r<n;r++) {
@@ -420,6 +172,75 @@ vector<double> matmulddf(vector<double> A,vector<double> B, int n) {
     return C;
 }
 
+vector<double> matmulqdf(vector<double> A,vector<double> B, int n) {
+    vector<double> C = zeros(n,n,4);
+    for (int r=0;r<n;r++) {
+        for (int c=0;c<n;c++) {
+            for (int k=0;k<n;k++) {
+                double c1,c2,c3,c4;
+                qdf_mul(A[r*n*4+k*4],A[r*n*4+k*4+1],A[r*n*4+k*4+2],A[r*n*4+k*4+3],B[k*n*4+c*4],B[k*n*4+c*4+1],B[k*n*4+c*4+2],B[k*n*4+c*4+3],&c1,&c2,&c3,&c4);
+                qdf_add(C[r*n*4+c*4],C[r*n*4+c*4+1],C[r*n*4+c*4+2],C[r*n*4+c*4+3],c1,c2,c3,c4,&C[r*n*4+c*4],&C[r*n*4+c*4+1],&C[r*n*4+c*4+2],&C[r*n*4+c*4+3]);
+            }
+        }
+    }
+    return C;
+}
+/*
+vector<double> matmulpdf(vector<double> A,vector<double> B, int n) {
+    vector<double> C = zeros(n,n,5);
+    for (int r=0;r<n;r++) {
+        for (int c=0;c<n;c++) {
+            for (int k=0;k<n;k++) {
+                double c1,c2,c3,c4,c5;
+                pdf_mul(A[r*n*5+k*5],A[r*n*5+k*5+1],A[r*n*5+k*5+2],A[r*n*5+k*5+3],A[r*n*5+k*5+4],B[k*n*5+c*5],B[k*n*5+c*5+1],B[k*n*5+c*5+2],B[k*n*5+c*5+3],B[k*n*5+c*5+4],&c1,&c2,&c3,&c4,&c5);
+                pdf_add(C[r*n*5+c*5],C[r*n*5+c*5+1],C[r*n*5+c*5+2],C[r*n*5+c*5+3],C[r*n*5+c*5+4],c1,c2,c3,c4,c5,&C[r*n*5+c*5],&C[r*n*5+c*5+1],&C[r*n*5+c*5+2],&C[r*n*5+c*5+3],&C[r*n*5+c*5+4]);
+            }
+        }
+    }
+    return C;
+}
+*/
+vector<double> matmulodf(vector<double> A,vector<double> B, int n) {
+    vector<double> C = zeros(n,n,8);
+    for (int r=0;r<n;r++) {
+        for (int c=0;c<n;c++) {
+            for (int k=0;k<n;k++) {
+                double c1,c2,c3,c4,c5,c6,c7,c8;
+                odf_mul(A[r*n*8+k*8],A[r*n*8+k*8+1],A[r*n*8+k*8+2],A[r*n*8+k*8+3],A[r*n*8+k*8+4],A[r*n*8+k*8+5],A[r*n*8+k*8+6],A[r*n*8+k*8+7],B[k*n*8+c*8],B[k*n*8+c*8+1],B[k*n*8+c*8+2],B[k*n*8+c*8+3],B[k*n*8+c*8+4],B[k*n*8+c*8+5],B[k*n*8+c*8+6],B[k*n*8+c*8+7],&c1,&c2,&c3,&c4,&c5,&c6,&c7,&c8);
+                odf_add(C[r*n*8+c*8],C[r*n*8+c*8+1],C[r*n*8+c*8+2],C[r*n*8+c*8+3],C[r*n*8+c*8+4],C[r*n*8+c*8+5],C[r*n*8+c*8+6],C[r*n*8+c*8+7],c1,c2,c3,c4,c5,c6,c7,c8,&C[r*n*8+c*8],&C[r*n*8+c*8+1],&C[r*n*8+c*8+2],&C[r*n*8+c*8+3],&C[r*n*8+c*8+4],&C[r*n*8+c*8+5],&C[r*n*8+c*8+6],&C[r*n*8+c*8+7]);
+            }                                                                                                                   }
+    }
+    return C;
+}
+/*
+vector<double> matmuldaf(vector<double> A,vector<double> B, int n) {
+    vector<double> C = zeros(n,n,10);
+    for (int r=0;r<n;r++) {
+        for (int c=0;c<n;c++) {
+            for (int k=0;k<n;k++) {
+                double c1,c2,c3,c4,c5,c6,c7,c8,c9,c10;
+                daf_mul(A[r*n*10+k*10],A[r*n*10+k*10+1],A[r*n*10+k*10+2],A[r*n*10+k*10+3],A[r*n*10+k*10+4],A[r*n*10+k*10+5],A[r*n*10+k*10+6],A[r*n*10+k*10+7],A[r*n*10+k*10+8],A[r*n*10+k*10+9],B[k*n*10+c*10],B[k*n*10+c*10+1],B[k*n*10+c*10+2],B[k*n*10+c*10+3],B[k*n*10+c*10+4],B[k*n*10+c*10+5],B[k*n*10+c*10+6],B[k*n*10+c*10+7],B[k*n*10+c*10+8],B[k*n*10+c*10+9],&c1,&c2,&c3,&c4,&c5,&c6,&c7,&c8,&c9,&c10);
+                daf_add(C[r*n*10+c*10],C[r*n*10+c*10+1],C[r*n*10+c*10+2],C[r*n*10+c*10+3],C[r*n*10+c*10+4],C[r*n*10+c*10+5],C[r*n*10+c*10+6],C[r*n*10+c*10+7],C[r*n*10+c*10+8],C[r*n*10+c*10+9],c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,&C[r*n*10+c*10],&C[r*n*10+c*10+1],&C[r*n*10+c*10+2],&C[r*n*10+c*10+3],&C[r*n*10+c*10+4],&C[r*n*10+c*10+5],&C[r*n*10+c*10+6],&C[r*n*10+c*10+7],&C[r*n*10+c*10+8],&C[r*n*10+c*10+9]);
+            }
+        }
+    }
+    return C;
+}
+*/
+
+vector<double> matmulhdf(vector<double> A,vector<double> B, int n) {
+    vector<double> C = zeros(n,n,16);
+    for (int r=0;r<n;r++) {
+	for (int c=0;c<n;c++) {
+            for (int k=0;k<n;k++) {
+       	        double c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,c16;
+		hdf_mul(A[r*n*16+k*16],A[r*n*16+k*16+1],A[r*n*16+k*16+2],A[r*n*16+k*16+3],A[r*n*16+k*16+4],A[r*n*16+k*16+5],A[r*n*16+k*16+6],A[r*n*16+k*16+7],A[r*n*16+k*16+8],A[r*n*16+k*16+9],A[r*n*16+k*16+10],A[r*n*16+k*16+11],A[r*n*16+k*16+12],A[r*n*16+k*16+13],A[r*n*16+k*16+14],A[r*n*16+k*16+15],B[k*n*16+c*16],B[k*n*16+c*16+1],B[k*n*16+c*16+2],B[k*n*16+c*16+3],B[k*n*16+c*16+4],B[k*n*16+c*16+5],B[k*n*16+c*16+6],B[k*n*16+c*16+7],B[k*n*16+c*16+8],B[k*n*16+c*16+9],B[k*n*16+c*16+10],B[k*n*16+c*16+11],B[k*n*16+c*16+12],B[k*n*16+c*16+13],B[k*n*16+c*16+14],B[k*n*16+c*16+15],&c1,&c2,&c3,&c4,&c5,&c6,&c7,&c8,&c9,&c10,&c11,&c12,&c13,&c14,&c15,&c16);
+                hdf_add(C[r*n*16+c*16],C[r*n*16+c*16+1],C[r*n*16+c*16+2],C[r*n*16+c*16+3],C[r*n*16+c*16+4],C[r*n*16+c*16+5],C[r*n*16+c*16+6],C[r*n*16+c*16+7],C[r*n*16+c*16+8],C[r*n*16+c*16+9],C[r*n*16+c*16+10],C[r*n*16+c*16+11],C[r*n*16+c*16+12],C[r*n*16+c*16+13],C[r*n*16+c*16+14],C[r*n*16+c*16+15],c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,c16,&C[r*n*16+c*16],&C[r*n*16+c*16+1],&C[r*n*16+c*16+2],&C[r*n*16+c*16+3],&C[r*n*16+c*16+4],&C[r*n*16+c*16+5],&C[r*n*16+c*16+6],&C[r*n*16+c*16+7],&C[r*n*16+c*16+8],&C[r*n*16+c*16+9],&C[r*n*16+c*16+10],&C[r*n*16+c*16+11],&C[r*n*16+c*16+12],&C[r*n*16+c*16+13],&C[r*n*16+c*16+14],&C[r*n*16+c*16+15]);
+            }                                                                                                                   }
+    }
+    return C;
+}
+
 void renormhost(vector<double> &A,int n,int p) {
     for (int i=0;i<n;i++) {
 	for (int j=0;j<n;j++) {
@@ -446,59 +267,73 @@ void renormhostbig(vector<double> &A,int n,int p) {
     }
 }
 
-vector<double> squeeze2(vector<double> x,int q) {
-    vector<double> s;
-    for (int i=0;i<x.size();i+=2*q) {
-        double xhi = x[i];
-        double xlo = 0;
-	for (int j=1;j<2*q;j++) {
-            ddf_inc_d(&xhi,&xlo,x[i+j]);
-	}
-	s.push_back(xhi);
-	s.push_back(xlo);
+vector<double> squeeze(vector<double> x,int p,int q) {
+    int n = x.size()/(p*q);
+    vector<double> y = zeros(n,1,p);
+    for (int i=0;i<n;i++) {
+
+        y[p*i] = x[p*q*i];
+	for (int j=1;j<p*q;j++) {
+		if (p==2) {
+			ddf_inc_d(&y[p*i],&y[p*i+1],x[p*q*i+j]);
+		} else if (p==4) {
+			qdf_inc_d(&y[p*i],&y[p*i+1],&y[p*i+2],&y[p*i+3],x[p*q*i+j]);
+		} else if (p==8) {
+			odf_inc_d(&y[p*i],&y[p*i+1],&y[p*i+2],&y[p*i+3],&y[p*i+4],&y[p*i+5],&y[p*i+6],&y[p*i+7],x[p*q*i+j]);
+		} else if (p==16) {
+			hdf_inc_d(&y[p*i],&y[p*i+1],&y[p*i+2],&y[p*i+3],&y[p*i+4],&y[p*i+5],&y[p*i+6],&y[p*i+7],&y[p*i+8],&y[p*i+9],&y[p*i+10],&y[p*i+11],&y[p*i+12],&y[p*i+13],&y[p*i+14],&y[p*i+15],x[p*q*i+j]);
+        }
     }
-    return s;
+
+    }
+    return y;
 }
 
-__global__ void pllsqueeze2kernel(double *x,double *s,int q) {
+__global__ void pllsqueezekernel(double *x,double *y,int p,int q) {
     int i = blockDim.x*blockIdx.x+threadIdx.x;
-    double xhi = x[2*q*i];
-    double xlo = 0;
-    for (int j=1;j<2*q;j++) {
-	ddf_inc_d(&xhi,&xlo,x[2*q*i+j]);
+    y[p*i] = x[p*q*i];
+    for (int j=1;j<p*q;j++) {
+	if (p==2) {
+            ddf_inc_d(&y[p*i],&y[p*i+1],x[p*q*i+j]);
+	} else if (p==4) {
+	    qdf_inc_d(&y[p*i],&y[p*i+1],&y[p*i+2],&y[p*i+3],x[p*q*i+j]);
+	} else if (p==8) {
+	    odf_inc_d(&y[p*i],&y[p*i+1],&y[p*i+2],&y[p*i+3],&y[p*i+4],&y[p*i+5],&y[p*i+6],&y[p*i+7],x[p*q*i+j]);
+	} else if (p==16) {
+	    hdf_inc_d(&y[p*i],&y[p*i+1],&y[p*i+2],&y[p*i+3],&y[p*i+4],&y[p*i+5],&y[p*i+6],&y[p*i+7],&y[p*i+8],&y[p*i+9],&y[p*i+10],&y[p*i+11],&y[p*i+12],&y[p*i+13],&y[p*i+14],&y[p*i+15],x[p*q*i+j]);
+	}
+	__syncthreads();
     }
-    s[2*i] = xhi;
-    s[2*i+1] = xlo;
 }
 
-vector<double> pllsqueeze2(vector<double> x,int q) {
-    int n = x.size()/(2*q);
-    vector<double> s = zeros(n,1,2*q);
+vector<double> pllsqueeze(vector<double> x,int p,int q) {
+    int n = x.size()/(p*q);
+    vector<double> y = zeros(n,1,p);
 
     double* x_d;
-    double* s_d;
-    cudaMalloc((void**)&x_d,n*2*q*sizeof(double));
-    cudaMemcpy(x_d,x.data(),n*2*q*sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&s_d,n*2*sizeof(double));
-    cudaMemcpy(s_d,s.data(),n*2*sizeof(double),cudaMemcpyHostToDevice);
-
+    double* y_d;
+    cudaMalloc((void**)&x_d,n*p*q*sizeof(double));
+    cudaMemcpy(x_d,x.data(),n*p*q*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&y_d,n*p*sizeof(double));
+    cudaMemcpy(y_d,y.data(),n*p*sizeof(double),cudaMemcpyHostToDevice);
+    
     dim3 G;
     dim3 B;
     if (n <64) {
-	G.x = 1;
-	G.y = 1;
-	B.x = n;
-	B.y = 1;
+        G.x = 1;
+        G.y = 1;
+        B.x = n;
+        B.y = 1;
     } else {
-	G.x = n/64; // assume 64|n
-	G.y = 1;
-	B.x = 64;
-	B.y = 1;
+        G.x = n/64; // assume 64|n
+        G.y = 1;
+        B.x = 64;
+        B.y = 1;
     }
-    
-    pllsqueeze2kernel<<<G,B>>>(x_d,s_d,q);
 
-    cudaMemcpy(s.data(),s_d,n*2*sizeof(double),cudaMemcpyDeviceToHost);
+    pllsqueezekernel<<<G,B>>>(x_d,y_d,p,q);
 
-    return s;
+    cudaMemcpy(y.data(),y_d,n*p*sizeof(double),cudaMemcpyDeviceToHost);
+
+    return y;
 }

@@ -2,6 +2,12 @@
 #define _TCFLAT_
 
 #include "floatybits.h"
+#include "double_double_functions.h"
+#include "quad_double_functions.h"
+//#include "penta_double_functions.h"
+#include "hexa_double_functions.h"
+#include "octo_double_functions.h"
+//#include "deca_double_functions.h"
 
 
 #include <stdio.h>
@@ -43,358 +49,26 @@ vector<double> bigB(vector<double> B,int n,int p);
 */
 vector<double> bigB2(vector<double> B,int n,int p);
 
-/*ddf functions copied and adapted from PHCpack/src/GPU/Norms/double_double_functions.h
-*/
-__host__ __device__ double ddf_quick_two_sum ( double a, double b, double *err );
-/*
- * DESCRIPTION :
- *   Assuming |a| >= |b|, returns a+b and in err the error.
- *
- * ON ENTRY :
- *   a,b      two doubles: |a| >= |b|.
- *
- * ON RETURN :
- *   s        returned sum of a and b.
- *   err      error value, b - (s - a). */
-
-__host__ __device__ double ddf_two_sum ( double a, double b, double *err );
-/*
- * DESCRIPTION :
- *   Computes fl(a+b) and err(a+b).
- *
- * ON ENTRY :
- *   a,b      two doubles.
- *
- * ON RETURN :
- *   s        approximation for the sum of a and b is returned;
- *   err      error of a + b. */
-
-__host__ __device__ void ddf_add
- ( double a_hi, double a_lo, double b_hi, double b_lo,
-   double *c_hi, double *c_lo );
-/*
- * DESCRIPTION : c = a + b.
- *   Adds two double doubles in a (a_hi, a_lo) and b (b_hi, b_lo)
- *   to make the double double c (c_hi, c_lo).
- *
- * ON ENTRY :
- *   a_hi     high part of the double double a;
- *   a_lo     low part of the double double a;
- *   b_hi     high part of the double double b;
- *   b_lo     low part of the double double b.
- *
- * ON RETURN :
- *   c_hi     high part of the double double c;
- *   c_lo     low part of the double double c. */
-
-__host__ __device__ double ddf_quick_two_diff ( double a, double b, double *err );
-/*
- * DESCRIPTION :
- *   Assuming |a| >= |b|, returns a-b and in err the error.
- *
- * ON ENTRY :
- *   a,b      two doubles: |a| >= |b|.
- *
- * ON RETURN :
- *   s        returned a minus b.
- *   err      error value, (a - s) - b. */
-
-__host__ __device__ double ddf_two_diff ( double a, double b, double *err );
-/*
- * DESCRIPTION :
- *   Computes fl(a-b) and err(a-b).
- *
- * ON ENTRY :
- *   a,b      two doubles.
- *
- * ON RETURN :
- *   s        approximation for the difference of a with b is returned;
- *   err      error of a - b. */
-
-__host__ __device__ void ddf_minus ( double *a_hi, double *a_lo );
-/*
- * DESCRIPTION : a = -a, unary minus,
- *   Flips the sign of both high and low parts of the double double a.
- *
- * ON ENTRY :
- *   a_hi     high part of the double double a;
- *   a_hi     low part of the double double a.
- *
- * ON RETURN :
- *   a_hi     high part of the double double -a;
- *   a_hi     low part of the double double -a. */
-
-__host__ __device__ void ddf_sub
- ( double a_hi, double a_lo, double b_hi, double b_lo,
-   double *c_hi, double *c_lo );
-/*
- * DESCRIPTION : c = a - b.
- *   Subtracts the double double in b (b_hi, b_lo) 
- *   from the double double in a (a_hi, a_lo)
- *   and places the result in the double double c (c_hi, c_lo).
- *
- * ON ENTRY :
- *   a_hi     high part of the double double a;
- *   a_lo     low part of the double double a;
- *   b_hi     high part of the double double b;
- *   b_lo     low part of the double double b.
- *
- * ON RETURN :
- *   c_hi     high part of the double double c;
- *   c_lo     low part of the double double c. */
-
-__host__ __device__ void ddf_sub_dd_d
- ( double a_hi, double a_lo, double b, double *c_hi, double *c_lo );
-/*
- * DESCRIPTION : c = a - b.
- *   Subtracts the double b from the double double in a (a_hi, a_lo)
- *   and places the result in the double double c (c_hi, c_lo).
- *
- * ON ENTRY :
- *   a_hi     high part of the double double a;
- *   a_lo     low part of the double double a;
- *   b        some double.
- *
- * ON RETURN :
- *   c_hi     high part of the double double c;
- *   c_lo     low part of the double double c. */
-
-/********** incrementers, decrementers, and multipliers ****************/
-
-__host__ __device__ void ddf_inc ( double *a_hi, double *a_lo, double b_hi, double b_lo );
-/*
- * DESCRIPTION : a = a + b.
- *   Inplace increment of the double double a (a_hi, a_lo)
- *   with the double double in b (b_hi, b_lo) 
- *
- * ON ENTRY :
- *   a_hi     high part of the double double a;
- *   a_lo     low part of the double double a;
- *   b_hi     high part of the double double b;
- *   b_lo     low part of the double double b.
- *
- * ON RETURN :
- *   a_hi     high part of the double double a;
- *   a_lo     low part of the double double a. */
-
-__host__ __device__ void ddf_inc_d ( double *a_hi, double *a_lo, double b );
-/*
- * DESCRIPTION : a = a + b.
- *   Inplace increment of the double double a (a_hi, a_lo)
- *   with the double b.
- *
- * ON ENTRY :
- *   a_hi     high part of the double double a;
- *   a_lo     low part of the double double a;
- *   b        some double.
- *
- * ON RETURN :
- *   a_hi     high part of the double double a;
- *   a_lo     low part of the double double a. */
-
-__host__ __device__ void ddf_dec ( double *a_hi, double *a_lo, double b_hi, double b_lo );
-/*
- * DESCRIPTION : a = a - b.
- *   Inplace decrement of the double double a (a_hi, a_lo)
- *   with the double double in b (b_hi, b_lo) 
- *
- * ON ENTRY :
- *   a_hi     high part of the double double a;
- *   a_lo     low part of the double double a;
- *   b_hi     high part of the double double b;
- *   b_lo     low part of the double double b.
- *
- * ON RETURN :
- *   a_hi     high part of the double double a;
- *   a_lo     low part of the double double a. */
-
-__host__ __device__ void ddf_dec_d ( double *a_hi, double *a_lo, double b );
-/*
- * DESCRIPTION : a = a - b.
- *   Inplace decrement of the double double a (a_hi, a_lo)
- *   with the double b.
- *
- * ON ENTRY :
- *   a_hi     high part of the double double a;
- *   a_lo     low part of the double double a;
- *   b        some double.
- *
- * ON RETURN :
- *   a_hi     high part of the double double a;
- *   a_lo     low part of the double double a. */
-
-__host__ __device__ void ddf_mlt ( double *a_hi, double *a_lo, double b_hi, double b_lo );
-/*
- * DESCRIPTION : a = a * b.
- *   Inplace multiplication of the double double a (a_hi, a_lo)
- *   with the double double in b (b_hi, b_lo) 
- *
- * ON ENTRY :
- *   a_hi     high part of the double double a;
- *   a_lo     low part of the double double a;
- *   b_hi     high part of the double double b;
- *   b_lo     low part of the double double b.
- *
- * ON RETURN :
- *   a_hi     high part of the double double a;
- *   a_lo     low part of the double double a. */
-
-__host__ __device__ void ddf_mlt_d ( double *a_hi, double *a_lo, double b );
-/*
- * DESCRIPTION : a = a * b.
- *   Inplace multiplication of the double double a (a_hi, a_lo)
- *   with the double b.
- *
- * ON ENTRY :
- *   a_hi     high part of the double double a;
- *   a_lo     low part of the double double a;
- *   b        some double.
- *
- * ON RETURN :
- *   a_hi     high part of the double double a;
- *   a_lo     low part of the double double a. */
-
-/************************ multiplications ********************************/
-
-__host__ __device__ void ddf_split ( double a, double *hi, double *lo );
-/*
- * DESCRIPTION :
- *   Computes high and low word of a.
- *
- * ON ENTRY :
- *   a        some double float.
- *
- * ON RETURN :
- *   hi       high word of a;
- *   lo       low word of a. */ 
-
-__host__ __device__ double ddf_two_prod ( double a, double b, double *err );
-/*
- * DESCRIPTION :
- *   Computes fl(a*b) and err(a*b).
- *
- * ON ENTRY :
- *   a,b      two doubles.
- *
- * ON RETURN :
- *   p        returned approximation for a*b;
- *   err      error on the approximated product. */
-
-__host__ __device__ double ddf_two_sqr ( double a, double *err );
-/*
- * DESCRIPTION :
- *   Computes fl(a*a) and err(a*a) faster than two_prod. */
-
-__host__ __device__ void ddf_mul
- ( double a_hi, double a_lo, double b_hi, double b_lo,
-   double *c_hi, double *c_lo );
-/*
- * DESCRIPTION : c = a * b.
- *   Multiplies two double doubles in a (a_hi, a_lo) and b (b_hi, b_lo)
- *   to make the double double c (c_hi, c_lo).
- *
- * ON ENTRY :
- *   a_hi     high part of the double double a;
- *   a_lo     low part of the double double a;
- *   b_hi     high part of the double double b;
- *   b_lo     low part of the double double b.
- *
- * ON RETURN :
- *   c_hi     high part of the double double c;
- *   c_lo     low part of the double double c. */
-
-__host__ __device__ void ddf_sqr ( double a_hi, double a_lo, double *b_hi, double *b_lo );
-/*
- * DESCRIPTION :
- *   Returns in the double double b (b_hi, b_lo) 
- *   the square of the double double a (a_hi, a_lo).
- *
- * ON ENTRY :
- *   a_hi     high part of the double double a;
- *   a_lo     low part of the double double a.
- *
- * ON RETURN :
- *   b_hi     high part of the double double b;
- *   b_lo     low part of the double double b. */
-
-__host__ __device__ void ddf_mul_d_dd
- ( double a, double b_hi, double b_lo, double *c_hi, double *c_lo );
-/*
- * DESCRIPTION : c = a * b.
- *   Multiplies the double a with the double double b (b_hi, b_lo)
- *   to make the double double c (c_hi, c_lo).
- *
- * ON ENTRY :
- *   a        some double;
- *   b_hi     high part of the double double b;
- *   b_lo     low part of the double double b;
- *
- * ON RETURN :
- *   c_hi     high part of the double double c;
- *   c_lo     low part of the double double c. */
-
-/*************************** divisions ***************************/
-
-__host__ __device__ void ddf_div
- ( double a_hi, double a_lo, double b_hi, double b_lo,
-   double *c_hi, double *c_lo );
-/*
- * DESCRIPTION : c = a / b.
- *   Divides the double doubles in a (a_hi, a_lo) by b (b_hi, b_lo)
- *   to make the double double c (c_hi, c_lo).
- *
- * ON ENTRY :
- *   a_hi     high part of the double double a;
- *   a_lo     low part of the double double a;
- *   b_hi     high part of the double double b;
- *   b_lo     low part of the double double b.
- *
- * ON RETURN :
- *   c_hi     high part of the double double c;
- *   c_lo     low part of the double double c. */
-
-/*************************** sqrt ***************************/
-
-__host__ __device__ void ddf_sqrt ( double a_hi, double a_lo, double *b_hi, double *b_lo );
-/*
- * DESCRIPTION :
- *   Returns in the double double b (b_hi, b_lo) 
- *   the square root of the double double a (a_hi, a_lo).
- *
- * ON ENTRY :
- *   a_hi     high part of the double double a;
- *   a_lo     low part of the double double a.
- *
- * ON RETURN :
- *   b_hi     high part of the double double b;
- *   b_lo     low part of the double double b. */
-
-__host__ __device__ void ddf_abs ( double a_hi, double a_lo, double *b_hi, double *b_lo );
-/*
- * DESCRIPTION :
- *   Returns in the double double b (b_hi, b_lo) the absolute value
- *   of the double double a (a_hi, a_lo).
- *
- * ON ENTRY :
- *   a_hi     high part of the double double a;
- *   a_lo     low part of the double double a.
- *
- * ON RETURN :
- *   b_hi     high part of the double double b;
- *   b_lo     low part of the double double b. */
-/*end ddf*/
-
 /*renormbigA takes a matrix of form bigA(A,n,p) and runs on nxn threads in a 1x1 block to renormalize into non overlapping p-doubles component wise*/
 __global__ void renormbigA(double* A,int n,int p);
 
 /*renormA takes an nxn matrix A of p-doubles and runs on nxn threads in a 1x1 block to renormalize into non overlapping p-doubles component wise*/
 __global__ void renormA(double* A,int n,int p);
 
+/*matmulTCnt(A,B,n,p) takes nxn matrices A,B of p-doubles and computes the product C, done with regular CUDA cores, with helper function matmulkernel executed on nxn blocks with px1 threads*/
+__global__ void matmulkernel(double* A,double* B,double* C,int n,int p);
+vector<double> matmulTCnt(vector<double> A,vector<double> B, int n, int p);
+
 /*matmulhost(A,B,n,p) takes nxn matrices A,B of p-doubles and computes the product C, all done on the host*/
 vector<double> matmulhost(vector<double> A,vector<double> B, int n, int p);
 
-/*matmulhost(A,B,n,p) takes nxn matrices A,B of 2-doubles and computes the product C, all done on the host*/
+/*matmul{h}(A,B,n) for h in {ddf,qdf,pdf,odf,daf,hdf} takes nxn matrices A,B of 2,4,5,8,10,16-doubles respectively and computes the product C, all done on the host*/
 vector<double> matmulddf(vector<double> A,vector<double> B, int n);
+vector<double> matmulqdf(vector<double> A,vector<double> B, int n);
+//vector<double> matmulpdf(vector<double> A,vector<double> B, int n);
+vector<double> matmulodf(vector<double> A,vector<double> B, int n);
+//vector<double> matmuldaf(vector<double> A,vector<double> B, int n);
+vector<double> matmulhdf(vector<double> A,vector<double> B, int n);
 
 /*renormhost is equivalent to renormA but is done purely on the host*/
 void renormhost(vector<double> &A,int n,int p);
@@ -402,12 +76,12 @@ void renormhost(vector<double> &A,int n,int p);
 /*renormhostbig is equivalent to renormbigA but is done purely on the host*/
 void renormhostbig(vector<double> &A,int n,int p);
 
-/*squeeze2 takes a matrix of q-split double doubles and condenses them*/
-vector<double> squeeze2(vector<double> x,int q);
+/*squeeze takes a matrix of q-split p doubles and condenses them*/
+vector<double> squeeze(vector<double> x,int p,int q);
 
-/*pllsqueeze2 is a parallel variant of squeeze2, takes an n dimensional vector x of 2q-doubles and places them in an n dimesnional vector of 2-doubles s, uses pllsqueeze2kernel which uses 1 dimensional tiled threading, partitioning n into 64*/
-__global__ void pllsqueeze2kernel(double *x,double *s,int q);
-vector<double> pllsqueeze2(vector<double> x,int q);
+/*pllsqueeze2 is a parallel variant of squeeze, takes an n dimensional vector x of pq-doubles and places them in an n dimesnional vector of p-doubles y, uses pllsqueezekernel which uses 1 dimensional tiled threading, partitioning n into 64*/
+__global__ void pllsqueezekernel(double *x,double *y,int p,int q);
+vector<double> pllsqueeze(vector<double> x,int p,int q);
 
 #endif
 
