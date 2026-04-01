@@ -18,7 +18,6 @@ smTCGemm:
 	./dmmarun
 
 matmatTC:
-	gcc -c ../../PHCpack/src/GPU/Norms/double_double_functions.cpp
 	nvcc -ccbin=$(GPP) -arch=sm_80 -c floatybits.cu
 	nvcc -ccbin=$(GPP) -arch=sm_80 -c double_double_functions.cu
 	nvcc -ccbin=$(GPP) -arch=sm_80 -c quad_double_functions.cu
@@ -28,7 +27,7 @@ matmatTC:
 	nvcc -ccbin=$(GPP) -arch=sm_80 -c hexa_double_functions.cu
 	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCcuda.cu
 	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCtest.cu
-	nvcc -ccbin=$(GPP) floatybits.o double_double_functions.o quad_double_functions.o octo_double_functions.o hexa_double_functions.o TCcuda.o TCtest.o -o mytest
+	nvcc -ccbin=$(GPP) floatybits.o TCcuda.o TCtest.o -o mytest
 	./mytest
 
 matmatTC2:

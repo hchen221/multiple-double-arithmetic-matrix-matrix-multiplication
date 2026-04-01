@@ -2,6 +2,12 @@
 #include "floatybits.h"
 #include <stdio.h>
 #include <iostream>
+#include "double_double_functions.cu"
+#include "quad_double_functions.cu"
+//#include "penta_double_functions.cu"
+#include "hexa_double_functions.cu"
+#include "octo_double_functions.cu"
+//#include "deca_double_functions.cu"
 
 /*
 Assume matrices have a flat representation by default
