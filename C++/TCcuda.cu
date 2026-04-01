@@ -4,10 +4,8 @@
 #include <iostream>
 #include "double_double_functions.cu"
 #include "quad_double_functions.cu"
-//#include "penta_double_functions.cu"
-#include "hexa_double_functions.cu"
 #include "octo_double_functions.cu"
-//#include "deca_double_functions.cu"
+#include "hexa_double_functions.cu"
 
 /*
 Assume matrices have a flat representation by default
@@ -110,23 +108,136 @@ __global__ void renormA(double* A,int n,int p) {
     }
 }
 
-__global__ void matmulkernel(double* A,double* B, double* C,int n, int p) {
-    int r = blockIdx.x;
-    int c = blockIdx.y;
-    int i = threadIdx.x;
-    for (int k=0;k<n;k++) {
-        for (int j=0;j<p;j++) {
-	    if (j<=i) {
-		C[r*n*p+c*p+i] += A[r*n*p+k*p+j]*B[k*n*p+c*p+(i-j)];
-	    } else {
-	        C[r*n*p+c*p+i] += 0*0;
-	    }
-	    __syncthreads();
-	}
+__global__ void ddmm(double *A,double *B,double *C,int n)
+{
+    int r = blockIdx.x*blockDim.x+threadIdx.x;
+    int c = blockIdx.y*blockDim.y+threadIdx.y;
+
+    double prd1 = 0.0;
+    double prd2 = 0.0;
+
+    double a1,a2,b1,b2,c1,c2;
+    for(int k=0; k<n; k++)
+    {
+        a1 = A[r*n*2+k*2]; a2 = A[r*n*2+k*2+1];
+        b1 = B[k*n*2+c*2]; b2 = B[k*n*2+c*2+1];
+        
+        ddf_mul(a1,a2,b1,b2,&c1,&c2);
+        ddf_add(prd1,prd2,c1,c2,&prd1,&prd2);
     }
+    C[r*n*2+c*2] = prd1;
+    C[r*n*2+c*2+1] = prd2;
 }
 
-vector<double> matmulTCnt(vector<double> A,vector<double> B, int n, int p) {
+__global__ void qdmm(double *A,double *B,double *C,int n)
+{
+    int r = blockIdx.x*blockDim.x+threadIdx.x;
+    int c = blockIdx.y*blockDim.y+threadIdx.y;
+
+    double prd1 = 0.0;
+    double prd2 = 0.0;
+    double prd3 = 0.0;
+    double prd4 = 0.0;
+
+    double a1,a2,a3,a4,b1,b2,b3,b4,c1,c2,c3,c4;
+
+    for(int k=0; k<n; k++)
+    {
+        a1 = A[r*n*4+k*4]; a2 = A[r*n*4+k*4+1]; a3 = A[r*n*4+k*4+2]; a4 = A[r*n*4+k*4+3];
+        b1 = B[r*n*4+k*4]; b2 = B[r*n*4+k*4+1]; b3 = B[r*n*4+k*4+2]; b4 = B[r*n*4+k*4+3];
+
+        qdf_mul(a1,a2,a3,a4,b1,b2,b3,b4,&c1,&c2,&c3,&c4);
+        qdf_add(prd1,prd2,prd3,prd4,c1,c2,c3,c4,&prd1,&prd2,&prd3,&prd4);
+    }
+    C[r*n*4+c*4] = prd1;
+    C[r*n*4+c*4+1] = prd2;
+    C[r*n*4+c*4+2] = prd3;
+    C[r*n*4+c*4+3] = prd4;
+}
+
+__global__ void odmm(double *A,double *B,double *C,int n)
+{
+    int r = blockIdx.x*blockDim.x+threadIdx.x;
+    int c = blockIdx.y*blockDim.y+threadIdx.y;
+
+    double prd1 = 0.0;
+    double prd2 = 0.0;
+    double prd3 = 0.0;
+    double prd4 = 0.0;
+    double prd5 = 0.0;
+    double prd6 = 0.0;
+    double prd7 = 0.0;
+    double prd8 = 0.0;
+
+    double a1,a2,a3,a4,a5,a6,a7,a8,b1,b2,b3,b4,b5,b6,b7,b8,c1,c2,c3,c4,c5,c6,c7,c8;
+    for(int k=0; k<n; k++)
+    {
+        a1 = A[r*n*8+k*8]; a2 = A[r*n*8+k*8+1]; a3 = A[r*n*8+k*8+2]; a4 = A[r*n*8+k*8+3]; a5 = A[r*n*8+k*8+4]; a6 = A[r*n*8+k*8+5]; a7 = A[r*n*8+k*8+6]; a8 = A[r*n*8+k*8+7];
+        b1 = B[k*n*8+c*8]; b2 = B[k*n*8+c*8+1]; b3 = B[k*n*8+c*8+2]; b4 = B[k*n*8+c*8+3]; b5 = B[k*n*8+c*8+4]; b6 = B[k*n*8+c*8+5]; b7 = B[k*n*8+c*8+6]; b8 = B[k*n*8+c*8+7];
+        
+        odf_mul(a1,a2,a3,a4,a5,a6,a7,a8,b1,b2,b3,b4,b5,b6,b7,b8,&c1,&c2,&c3,&c4,&c5,&c6,&c7,&c8);
+        odf_add(prd1,prd2,prd3,prd4,prd5,prd6,prd7,prd8,c1,c2,c3,c4,c5,c6,c7,c8,&prd1,&prd2,&prd3,&prd4,&prd5,&prd6,&prd7,&prd8);
+    }
+    C[r*n*8+c*8] = prd1;
+    C[r*n*8+c*8+1] = prd2;
+    C[r*n*8+c*8+2] = prd3;
+    C[r*n*8+c*8+3] = prd4;
+    C[r*n*8+c*8+4] = prd5;
+    C[r*n*8+c*8+5] = prd6;
+    C[r*n*8+c*8+6] = prd7;
+    C[r*n*8+c*8+7] = prd8;
+}
+
+__global__ void hdmm(double *A,double *B,double *C,int n)
+{
+    int r = blockIdx.x*blockDim.x+threadIdx.x;
+    int c = blockIdx.y*blockDim.y+threadIdx.y;
+
+    double prd1 = 0.0;
+    double prd2 = 0.0;
+    double prd3 = 0.0;
+    double prd4 = 0.0;
+    double prd5 = 0.0;
+    double prd6 = 0.0;
+    double prd7 = 0.0;
+    double prd8 = 0.0;
+    double prd9 = 0.0;
+    double prd10 = 0.0;
+    double prd11 = 0.0;
+    double prd12 = 0.0;
+    double prd13 = 0.0;
+    double prd14 = 0.0;
+    double prd15 = 0.0;
+    double prd16 = 0.0;
+
+    double a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,a16,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11,b12,b13,b14,b15,b16,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,c16;
+    for(int k=0; k<n; k++)
+    {
+        a1 = A[r*n*16+k*16]; a2 = A[r*n*16+k*16+1]; a3 = A[r*n*16+k*16+2]; a4 = A[r*n*16+k*16+3]; a5 = A[r*n*16+k*16+4]; a6 = A[r*n*16+k*16+5]; a7 = A[r*n*16+k*16+6]; a8 = A[r*n*16+k*16+7]; a9 = A[r*n*16+k*16+8]; a10 = A[r*n*16+k*16+9]; a11 = A[r*n*16+k*16+10]; a12 = A[r*n*16+k*16+11]; a13 = A[r*n*16+k*16+12]; a14 = A[r*n*16+k*16+13]; a15 = A[r*n*16+k*16+14]; a16 = A[r*n*16+k*16+15];
+        b1 = B[k*n*16+c*16]; b2 = B[k*n*16+c*16+1]; b3 = B[k*n*16+c*16+2]; b4 = B[k*n*16+c*16+3]; b5 = B[k*n*16+c*16+4]; b6 = B[k*n*16+c*16+5]; b7 = B[k*n*16+c*16+6]; b8 = B[k*n*16+c*16+7]; b9 = B[k*n*16+c*16+8]; b10 = B[k*n*16+c*16+9]; b11 = B[k*n*16+c*16+10]; b12 = B[k*n*16+c*16+11]; b13 = B[k*n*16+c*16+12]; b14 = B[k*n*16+c*16+13]; b15 = B[k*n*16+c*16+14]; b16 = B[k*n*16+c*16+15];
+
+        hdf_mul(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,a16,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11,b12,b13,b14,b15,b16,&c1,&c2,&c3,&c4,&c5,&c6,&c7,&c8,&c9,&c10,&c11,&c12,&c13,&c14,&c15,&c16);
+        hdf_add(prd1,prd2,prd3,prd4,prd5,prd6,prd7,prd8,prd9,prd10,prd11,prd12,prd13,prd14,prd15,prd16,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,c16,&prd1,&prd2,&prd3,&prd4,&prd5,&prd6,&prd7,&prd8,&prd9,&prd10,&prd11,&prd12,&prd13,&prd14,&prd15,&prd16);
+    }
+    C[r*n*16+c*16] = prd1;
+    C[r*n*16+c*16+1] = prd2;
+    C[r*n*16+c*16+2] = prd3;
+    C[r*n*16+c*16+3] = prd4;
+    C[r*n*16+c*16+4] = prd5;
+    C[r*n*16+c*16+5] = prd6;
+    C[r*n*16+c*16+6] = prd7;
+    C[r*n*16+c*16+7] = prd8;
+    C[r*n*16+c*16+8] = prd9;
+    C[r*n*16+c*16+9] = prd10;
+    C[r*n*16+c*16+10] = prd11;
+    C[r*n*16+c*16+11] = prd12;
+    C[r*n*16+c*16+12] = prd13;
+    C[r*n*16+c*16+13] = prd14;
+    C[r*n*16+c*16+14] = prd15;
+    C[r*n*16+c*16+15] = prd16;
+}
+
+vector<double> matmulTCnt(vector<double> A,vector<double> B, int n, int nfrag, int p) {
     vector<double> C = zeros(n,n,p);
     
     double* A_d;
@@ -140,9 +251,18 @@ vector<double> matmulTCnt(vector<double> A,vector<double> B, int n, int p) {
     cudaMalloc((void**)&C_d,n*n*p*sizeof(double));
     cudaMemcpy(C_d,C.data(),n*n*p*sizeof(double),cudaMemcpyHostToDevice);
 
-    dim3 Gr(n,n);
-    dim3 Bl(p,1);
-    matmulkernel<<<Gr,Bl>>>(A_d,B_d,C_d,n,p);
+    int nlen = n/nfrag;
+    dim3 Gr(nlen,nlen);
+    dim3 Bl(nfrag,nfrag);
+    if (p==2) {
+        ddmm<<<Gr,Bl>>>(A_d,B_d,C_d,n);
+    } else if (p==4) {
+	qdmm<<<Gr,Bl>>>(A_d,B_d,C_d,n);
+    } else if (p==8) {
+	odmm<<<Gr,Bl>>>(A_d,B_d,C_d,n);
+    } else if (p==16) {
+	hdmm<<<Gr,Bl>>>(A_d,B_d,C_d,n);
+    }
     cudaMemcpy(C.data(),C_d,n*n*p*sizeof(double),cudaMemcpyDeviceToHost);
 
     return C;
@@ -191,21 +311,7 @@ vector<double> matmulqdf(vector<double> A,vector<double> B, int n) {
     }
     return C;
 }
-/*
-vector<double> matmulpdf(vector<double> A,vector<double> B, int n) {
-    vector<double> C = zeros(n,n,5);
-    for (int r=0;r<n;r++) {
-        for (int c=0;c<n;c++) {
-            for (int k=0;k<n;k++) {
-                double c1,c2,c3,c4,c5;
-                pdf_mul(A[r*n*5+k*5],A[r*n*5+k*5+1],A[r*n*5+k*5+2],A[r*n*5+k*5+3],A[r*n*5+k*5+4],B[k*n*5+c*5],B[k*n*5+c*5+1],B[k*n*5+c*5+2],B[k*n*5+c*5+3],B[k*n*5+c*5+4],&c1,&c2,&c3,&c4,&c5);
-                pdf_add(C[r*n*5+c*5],C[r*n*5+c*5+1],C[r*n*5+c*5+2],C[r*n*5+c*5+3],C[r*n*5+c*5+4],c1,c2,c3,c4,c5,&C[r*n*5+c*5],&C[r*n*5+c*5+1],&C[r*n*5+c*5+2],&C[r*n*5+c*5+3],&C[r*n*5+c*5+4]);
-            }
-        }
-    }
-    return C;
-}
-*/
+
 vector<double> matmulodf(vector<double> A,vector<double> B, int n) {
     vector<double> C = zeros(n,n,8);
     for (int r=0;r<n;r++) {
@@ -218,21 +324,6 @@ vector<double> matmulodf(vector<double> A,vector<double> B, int n) {
     }
     return C;
 }
-/*
-vector<double> matmuldaf(vector<double> A,vector<double> B, int n) {
-    vector<double> C = zeros(n,n,10);
-    for (int r=0;r<n;r++) {
-        for (int c=0;c<n;c++) {
-            for (int k=0;k<n;k++) {
-                double c1,c2,c3,c4,c5,c6,c7,c8,c9,c10;
-                daf_mul(A[r*n*10+k*10],A[r*n*10+k*10+1],A[r*n*10+k*10+2],A[r*n*10+k*10+3],A[r*n*10+k*10+4],A[r*n*10+k*10+5],A[r*n*10+k*10+6],A[r*n*10+k*10+7],A[r*n*10+k*10+8],A[r*n*10+k*10+9],B[k*n*10+c*10],B[k*n*10+c*10+1],B[k*n*10+c*10+2],B[k*n*10+c*10+3],B[k*n*10+c*10+4],B[k*n*10+c*10+5],B[k*n*10+c*10+6],B[k*n*10+c*10+7],B[k*n*10+c*10+8],B[k*n*10+c*10+9],&c1,&c2,&c3,&c4,&c5,&c6,&c7,&c8,&c9,&c10);
-                daf_add(C[r*n*10+c*10],C[r*n*10+c*10+1],C[r*n*10+c*10+2],C[r*n*10+c*10+3],C[r*n*10+c*10+4],C[r*n*10+c*10+5],C[r*n*10+c*10+6],C[r*n*10+c*10+7],C[r*n*10+c*10+8],C[r*n*10+c*10+9],c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,&C[r*n*10+c*10],&C[r*n*10+c*10+1],&C[r*n*10+c*10+2],&C[r*n*10+c*10+3],&C[r*n*10+c*10+4],&C[r*n*10+c*10+5],&C[r*n*10+c*10+6],&C[r*n*10+c*10+7],&C[r*n*10+c*10+8],&C[r*n*10+c*10+9]);
-            }
-        }
-    }
-    return C;
-}
-*/
 
 vector<double> matmulhdf(vector<double> A,vector<double> B, int n) {
     vector<double> C = zeros(n,n,16);

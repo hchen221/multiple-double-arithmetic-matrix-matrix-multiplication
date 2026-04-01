@@ -4,8 +4,8 @@
 #include <ctime>
 using namespace std;
 
-#define p 2
-#define n 64
+#define p 4
+#define n 256
 #define q 8
 
 #define M 8
@@ -100,23 +100,8 @@ void test(int expmin,int expmax) {
     cout << "Device? Finished. Time? " << df-d0 << endl;
 
     double h0 = (double)clock();
-    vector<double> C2;
-    if (p==2) {
-	    C2 = matmulddf(A,B,n);
-    } else if (p==4) {
-	    C2 = matmulqdf(A,B,n);
-    //} else if (p==5) {
-	//    C2 = matmulpdf(A,B,n);
-    } else if (p==8) {
-	    C2 = matmulodf(A,B,n);
-    //} else if (p==10) {
-	//    C2 = matmuldaf(A,B,n);
-    } else if (p==16) {
-	    C2 = matmulhdf(A,B,n);
-    }
+    vector<double> C2 = matmulTCnt(A,B,n,32,p);
     double hf = (double)clock();
-
-    //renormhost(C2,n,p);
 
     cout << "Host? Finished. Time? " << hf-h0 << endl;
     
@@ -150,7 +135,6 @@ void test(int expmin,int expmax) {
 int main() {
     int seed = time(NULL);
     srand(seed);
-    cout << "Seed? " << seed << endl;
     test(0,0);
     return 0;
 }

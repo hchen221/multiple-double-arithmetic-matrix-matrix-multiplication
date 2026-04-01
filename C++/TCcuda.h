@@ -4,10 +4,8 @@
 #include "floatybits.h"
 #include "double_double_functions.h"
 #include "quad_double_functions.h"
-//#include "penta_double_functions.h"
-#include "hexa_double_functions.h"
 #include "octo_double_functions.h"
-//#include "deca_double_functions.h"
+#include "hexa_double_functions.h"
 
 
 #include <stdio.h>
@@ -55,9 +53,12 @@ __global__ void renormbigA(double* A,int n,int p);
 /*renormA takes an nxn matrix A of p-doubles and runs on nxn threads in a 1x1 block to renormalize into non overlapping p-doubles component wise*/
 __global__ void renormA(double* A,int n,int p);
 
-/*matmulTCnt(A,B,n,p) takes nxn matrices A,B of p-doubles and computes the product C, done with regular CUDA cores, with helper function matmulkernel executed on nxn blocks with px1 threads*/
-__global__ void matmulkernel(double* A,double* B,double* C,int n,int p);
-vector<double> matmulTCnt(vector<double> A,vector<double> B, int n, int p);
+/*matmulTCnt(A,B,n,p) takes nxn matrices A,B of p-doubles and computes the product C, done with regular CUDA cores, with helper functions ddmm,qdmm,odmm,hdmm depending on p, executed on nlen x nlen blocks with block size nfrag x nfrag where nfrag*nlen=n. The kernels are adapted from ddmm_kernels.cu in PHCpack*/
+__global__ void ddmm(double *A,double *B,double *C,int n);
+__global__ void qdmm(double *A,double *B,double *C,int n);
+__global__ void odmm(double *A,double *B,double *C,int n);
+__global__ void hdmm(double *A,double *B,double *C,int n);
+vector<double> matmulTCnt(vector<double> A,vector<double> B,int n,int nfrag,int p);
 
 /*matmulhost(A,B,n,p) takes nxn matrices A,B of p-doubles and computes the product C, all done on the host*/
 vector<double> matmulhost(vector<double> A,vector<double> B, int n, int p);
@@ -65,9 +66,7 @@ vector<double> matmulhost(vector<double> A,vector<double> B, int n, int p);
 /*matmul{h}(A,B,n) for h in {ddf,qdf,pdf,odf,daf,hdf} takes nxn matrices A,B of 2,4,5,8,10,16-doubles respectively and computes the product C, all done on the host*/
 vector<double> matmulddf(vector<double> A,vector<double> B, int n);
 vector<double> matmulqdf(vector<double> A,vector<double> B, int n);
-//vector<double> matmulpdf(vector<double> A,vector<double> B, int n);
 vector<double> matmulodf(vector<double> A,vector<double> B, int n);
-//vector<double> matmuldaf(vector<double> A,vector<double> B, int n);
 vector<double> matmulhdf(vector<double> A,vector<double> B, int n);
 
 /*renormhost is equivalent to renormA but is done purely on the host*/
