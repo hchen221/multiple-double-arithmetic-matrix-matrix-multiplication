@@ -237,7 +237,7 @@ __global__ void hdmm(double *A,double *B,double *C,int n)
     C[r*n*16+c*16+15] = prd16;
 }
 
-vector<double> matmulTCnt(vector<double> A,vector<double> B, int n, int nfrag, int p) {
+vector<double> matmulTCnt(vector<double> A,vector<double> B, int n, int nfrag, int p, float &t_CUDA) {
     vector<double> C = zeros(n,n,p);
     
     double* A_d;
@@ -254,15 +254,32 @@ vector<double> matmulTCnt(vector<double> A,vector<double> B, int n, int nfrag, i
     int nlen = n/nfrag;
     dim3 Gr(nlen,nlen);
     dim3 Bl(nfrag,nfrag);
+
+    cudaEvent_t t0,t1;           // to measure time spent by kernels
+    cudaEventCreate(&t0);
+    cudaEventCreate(&t1);
     if (p==2) {
+	cudaEventRecord(t0);
         ddmm<<<Gr,Bl>>>(A_d,B_d,C_d,n);
+	cudaEventRecord(t1);
+	cudaEventSynchronize(t1);
     } else if (p==4) {
+	cudaEventRecord(t0);
 	qdmm<<<Gr,Bl>>>(A_d,B_d,C_d,n);
+	cudaEventRecord(t1);
+	cudaEventSynchronize(t1);
     } else if (p==8) {
+	cudaEventRecord(t0);
 	odmm<<<Gr,Bl>>>(A_d,B_d,C_d,n);
+        cudaEventRecord(t1);
+	cudaEventSynchronize(t1);
     } else if (p==16) {
+	cudaEventRecord(t0);
 	hdmm<<<Gr,Bl>>>(A_d,B_d,C_d,n);
+	cudaEventRecord(t1);
+	cudaEventSynchronize(t1);
     }
+    cudaEventElapsedTime(&t_CUDA,t0,t1);
     cudaMemcpy(C.data(),C_d,n*n*p*sizeof(double),cudaMemcpyDeviceToHost);
 
     return C;

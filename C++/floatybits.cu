@@ -116,18 +116,22 @@ vector<double> random_pd(int expmin,int expmax,int p) {
     return parts;
 }
 
-void balance4(vector<double> x) {
-    for (int i=0;i<3;i++) {
-	if (x[i+1]==0) {
-	    i+=2;
-	    continue;
-	}
-	int ex;
-	double f = frexp(x[i],&ex);
-	double no = ldexp(1.0,ex-14);
-	x[i] -= no;
-	x[i+1] += no;
+void balance(vector<double> &x,int a,int b,int threshold) {
+    for (int i=a;i<b-1;i++) {
+        if (x[i+1]==0) {
+            i+=1;
+            continue;
+        }
+        int ex;
+        double f = frexp(x[i],&ex);
+        double no = ldexp(1.0,ex-threshold);
+        x[i] -= no;
+        x[i+1] += no;
     }
+}
+
+void balance4(vector<double> &x,int a,int b) {
+    balance(x,a,b,14);
 }
 
 /*
@@ -164,32 +168,34 @@ vector<double> split4(vector<int> bits) {
     D.push_back(d2);
     D.push_back(d3);
     D.push_back(double_rep(bits)-(d1+d2+d3));
-    balance4(D);
     return D;
 }
 
 /*
-split4pd(x) applies split4 to a p-double x then returns the combined 4p-double
+split4pd(x) applies split4 to a vector of p-doubles x then returns the combined vector of 4p-doubles
 */
-vector<double> split4pd(vector<double> x) {
+vector<double> split4pd(vector<double> x,int p) {
     vector<double> x4;
     for (int i=0;i<x.size();i++) {
         vector<double> xi4 = split4(bitform(x[i]));
         x4.insert(x4.end(),xi4.begin(),xi4.end());
+	if (i%p==p-1) { // end of a p-double
+	    balance4(x4,x4.size()-4*p,x4.size()-1);
+	}
     }
     return x4;
 }
 
-void balance8(vector<double> x) {
-    for (int i=0;i<7;i++) {
+void balance8(vector<double> &x, int a,int b) {
+    for (int i=a;i<b-1;i++) {
         if (x[i+1]==0) {
-            i+=2;
+            i+=1;
             continue;
         }
         int ex;
         double f = frexp(x[i],&ex);
         double no;
-	if (i<3) {
+	if (i%8<3) {
 	    no = ldexp(1.0,ex-8);
 	} else {
 	    no = ldexp(1.0,ex-7);
@@ -281,15 +287,17 @@ vector<double> split8(vector<int> bits) {
     D.push_back(d6);
     D.push_back(d7);
     D.push_back(double_rep(bits)-(d1+d2+d3+d4+d5+d6+d7));
-    balance8(D);
     return D;
 }
 
-vector<double> split8pd(vector<double> x) {
+vector<double> split8pd(vector<double> x,int p) {
     vector<double> x8;
     for (int i=0;i<x.size();i++) {
         vector<double> xi8 = split8(bitform(x[i]));
         x8.insert(x8.end(),xi8.begin(),xi8.end());
+	if (i%p==p-1) { // end of a p-double
+            balance8(x8,x8.size()-8*p,x8.size()-1);
+        }
     }
     return x8;
 }

@@ -49,11 +49,11 @@ void test(int expmin,int expmax) {
     vector<double> Aq;
     vector<double> Bq;
     if (q==4) {
-        Aq = split4pd(A);
-        Bq = split4pd(B);
+        Aq = split4pd(A,p);
+        Bq = split4pd(B,p);
     } else if (q==8) {
-        Aq = split8pd(A);
-        Bq = split8pd(B);
+        Aq = split8pd(A,p);
+        Bq = split8pd(B,p);
     }
     //vector<double> A8D = bigA(A8,n,q*p);
     //vector<double> B8D = bigB(B8,n,q*p);
@@ -89,23 +89,51 @@ void test(int expmin,int expmax) {
     gridDim.x = (M_GLOBAL + (M*blockDim.x/32-1))/(M*blockDim.x/32);
     gridDim.y = (N_GLOBAL + N*blockDim.y-1)/(N*blockDim.y);
     
-    double T0 = (double)clock();
+    float t_raw;
+    cudaEvent_t T0,Tf;           // to measure time spent by kernels 
+    cudaEventCreate(&T0);
+    cudaEventCreate(&Tf);
+    cudaEventRecord(T0);
     matmul<<<gridDim,blockDim>>>(A_d,B_d,C_d);
-    double Tf = (double)clock();
+    cudaEventRecord(Tf);
+    cudaEventSynchronize(Tf);
+    cudaEventElapsedTime(&t_raw,T0,Tf);
+    float f_raw = M_GLOBAL*N_GLOBAL*(2*K_GLOBAL-1);
 
     cudaMemcpy(C1q.data(),C_d,M_GLOBAL*N_GLOBAL*sizeof(double),cudaMemcpyDeviceToHost);
     vector<double> C1 = pllsqueeze(C1q,p,q);
-    
+    for (int i=0;i<C1.size();i=i+p) {
+        balance(C1,i,i+p-1,53);
+    }
     double df = (double)clock();
 
-    cout << "TC? Finished. Raw time? " << Tf-T0 << ". Total time? " << df-d0 << endl;
+    cout << "TC? Finished. Raw performance? " << f_raw/t_raw << ". Total time? " << df-d0 << endl;
 
+    float t_CUDA;
     double h0 = (double)clock();
     int nfrag = min(32,n);
-    vector<double> C2 = matmulTCnt(A,B,n,nfrag,p);
+    vector<double> C2 = matmulTCnt(A,B,n,nfrag,p,t_CUDA);
+    for (int i=0;i<C2.size();i=i+p) {
+	balance(C2,i,i+p-1,53);
+    }
     double hf = (double)clock();
+    float f_CUDA,add_ops,mul_ops;
+    if (p==2) {
+	mul_ops=23*n*n*n;
+	add_ops=20*n*n*(n-1);
+    } else if (p==4) { // rest are 23 and 20 as placeholders until table given
+	mul_ops=23*n*n*n;
+        add_ops=20*n*n*(n-1); 
+    } else if (p==8) {
+	mul_ops=23*n*n*n;
+        add_ops=20*n*n*(n-1);
+    } else if (p==16) {
+	mul_ops=23*n*n*n;
+        add_ops=20*n*n*(n-1);
+    }
+    f_CUDA = mul_ops+add_ops;
 
-    cout << "CUDA? Finished. Time? " << hf-h0 << endl;
+    cout << "CUDA? Finished. Performance? " << f_CUDA/t_CUDA << endl;
     
     cout << "TC C[1,1]? (";
     for (int i=0;i<p;i++) {
@@ -138,6 +166,18 @@ int main() {
     int seed = time(NULL);
     srand(seed);
     test(0,0);
+    /*
+    vector<double> A = mat(2,2,0,0);
+    vector<double> A8 = split4pd(A,2);
+    int exp0,exp1;
+    double fr = frexp(A8[0],&exp0);
+    for (int i=1;i<8;i++) {
+	double fr = frexp(A8[i],&exp1);
+	cout << exp1-exp0 << endl;
+	exp0 = exp1;
+    }
+    */
+    
     return 0;
 }
 

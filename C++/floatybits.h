@@ -47,9 +47,14 @@ random_pd(expmin,expmax) returns a random p-double
 vector<double> random_pd(int expmin,int expmax,int p);
 
 /*
-balance4 takes a split 4 double x on input and balances the exponents
+balance takes a split p double x (from indices a to b) on input and balances the exponents with a given exponent threshold 
 */
-void balance4(vector<double> x);
+void balance(vector<double> &x,int a,int b,int threshold);
+
+/*
+balance4 takes a split 4p double x (from indices a to b) on input and balances the exponents
+*/
+void balance4(vector<double> &x,int a,int b);
 
 /*
 split4(bits) takes a 64 bit representation on input and returns the quad double in numerical form
@@ -57,14 +62,14 @@ split4(bits) takes a 64 bit representation on input and returns the quad double 
 vector<double> split4(vector<int> bits);
 
 /*
-split4pd(x) applies split4 to a p-double x then returns the combined 4p-double
+split4pd(x) applies split4 to a vector of p-doubles x then returns the combined vector of 4p-doubles
 */
-vector<double> split4pd(vector<double> x);
+vector<double> split4pd(vector<double> x,int p);
 
 /*
-balance8 takes a split 8 double x on input and balances the exponents
+balance8 takes a split 8p double x (from indices a to b) on input and balances the exponents
 */
-void balance8(vector<double> x);
+void balance8(vector<double> &x,int a,int b);
 
 /*
 split8(bits) takes a 64 bit representation on input and returns the quad double in numerical form
@@ -72,7 +77,7 @@ split8(bits) takes a 64 bit representation on input and returns the quad double 
 vector<double> split8(vector<int> bits);
 
 /*
-split8pd(x) applies split8 to a p-double x then returns the combined 8p-double
+split8pd(x) applies split8 to a vector of p-doubles x then returns the combined vector of 8p-doubles
 */
-vector<double> split8pd(vector<double> x);
+vector<double> split8pd(vector<double> x,int p);
 #endif

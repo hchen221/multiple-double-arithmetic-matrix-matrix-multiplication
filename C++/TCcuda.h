@@ -58,7 +58,7 @@ __global__ void ddmm(double *A,double *B,double *C,int n);
 __global__ void qdmm(double *A,double *B,double *C,int n);
 __global__ void odmm(double *A,double *B,double *C,int n);
 __global__ void hdmm(double *A,double *B,double *C,int n);
-vector<double> matmulTCnt(vector<double> A,vector<double> B,int n,int nfrag,int p);
+vector<double> matmulTCnt(vector<double> A,vector<double> B,int n,int nfrag,int p,float &t_CUDA);
 
 /*matmulhost(A,B,n,p) takes nxn matrices A,B of p-doubles and computes the product C, all done on the host*/
 vector<double> matmulhost(vector<double> A,vector<double> B, int n, int p);
