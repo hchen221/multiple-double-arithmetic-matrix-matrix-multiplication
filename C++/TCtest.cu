@@ -4,9 +4,9 @@
 #include <ctime>
 using namespace std;
 
-#define p 4
+#define p 2
 #define n 256
-#define q 8
+#define q 4
 
 #define M 8
 #define N 8
@@ -89,23 +89,25 @@ void test(int expmin,int expmax) {
     gridDim.x = (M_GLOBAL + (M*blockDim.x/32-1))/(M*blockDim.x/32);
     gridDim.y = (N_GLOBAL + N*blockDim.y-1)/(N*blockDim.y);
     
+    double T0 = (double)clock();
     matmul<<<gridDim,blockDim>>>(A_d,B_d,C_d);
+    double Tf = (double)clock();
 
     cudaMemcpy(C1q.data(),C_d,M_GLOBAL*N_GLOBAL*sizeof(double),cudaMemcpyDeviceToHost);
-    cout << "Matmul work? " << C1q[0] << endl;
     vector<double> C1 = pllsqueeze(C1q,p,q);
     
     double df = (double)clock();
 
-    cout << "Device? Finished. Time? " << df-d0 << endl;
+    cout << "TC? Finished. Raw time? " << Tf-T0 << ". Total time? " << df-d0 << endl;
 
     double h0 = (double)clock();
-    vector<double> C2 = matmulTCnt(A,B,n,32,p);
+    int nfrag = min(32,n);
+    vector<double> C2 = matmulTCnt(A,B,n,nfrag,p);
     double hf = (double)clock();
 
-    cout << "Host? Finished. Time? " << hf-h0 << endl;
+    cout << "CUDA? Finished. Time? " << hf-h0 << endl;
     
-    cout << "Device C[1,1]? (";
+    cout << "TC C[1,1]? (";
     for (int i=0;i<p;i++) {
         cout << C1[i];
         if (i<p-1) {
@@ -114,7 +116,7 @@ void test(int expmin,int expmax) {
     }
     cout << ")" << endl;
 
-    cout << "Host C[1,1]? (";
+    cout << "CUDA C[1,1]? (";
     for (int i=0;i<p;i++) {
         cout << C2[i];
 	if (i<p-1) {
