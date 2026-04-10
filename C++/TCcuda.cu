@@ -420,14 +420,24 @@ __global__ void pllsqueezekernel(double *x,double *y,int p,int q) {
     }
 }
 
-vector<double> pllsqueeze(vector<double> x,int p,int q) {
-    int n = x.size()/(p*q);
+__global__ void pllmixsqueeze(double *x,double *y) {
+   int i=blockDim.x*blockIdx.x+threadIdx.x;
+   y[2*i] = x[12*i];
+   y[2*i+1] = x[12*i+4];
+   for (int j=1;j<12;j++) {
+       ddf_inc_d(&y[2*i],&y[2*i+1],x[12*i+j]);
+       __syncthreads();
+   }
+}
+
+vector<double> pllsqueeze(vector<double> x,int p,int pp) {
+    int n = x.size()/pp;
     vector<double> y = zeros(n,1,p);
 
     double* x_d;
     double* y_d;
-    cudaMalloc((void**)&x_d,n*p*q*sizeof(double));
-    cudaMemcpy(x_d,x.data(),n*p*q*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x_d,n*pp*sizeof(double));
+    cudaMemcpy(x_d,x.data(),n*pp*sizeof(double),cudaMemcpyHostToDevice);
     cudaMalloc((void**)&y_d,n*p*sizeof(double));
     cudaMemcpy(y_d,y.data(),n*p*sizeof(double),cudaMemcpyHostToDevice);
     
@@ -445,7 +455,12 @@ vector<double> pllsqueeze(vector<double> x,int p,int q) {
         B.y = 1;
     }
 
-    pllsqueezekernel<<<G,B>>>(x_d,y_d,p,q);
+    if (pp==12) {
+	pllmixsqueeze<<<G,B>>>(x_d,y_d);
+    } else {
+	int q = pp/p;
+	pllsqueezekernel<<<G,B>>>(x_d,y_d,p,q);
+    }
 
     cudaMemcpy(y.data(),y_d,n*p*sizeof(double),cudaMemcpyDeviceToHost);
 

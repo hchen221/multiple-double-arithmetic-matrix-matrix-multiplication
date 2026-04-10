@@ -47,9 +47,14 @@ random_pd(expmin,expmax) returns a random p-double
 vector<double> random_pd(int expmin,int expmax,int p);
 
 /*
-balance takes a split p double x (from indices a to b) on input and balances the exponents with a given exponent threshold 
+is_balanced checks if 2 doubles x and y are balanced with respect to an exponent threshold, adapted from splitting_doubles.cpp from PHCpack
 */
-void balance(vector<double> &x,int a,int b,int threshold);
+bool is_balanced(double x,double y,int threshold);
+
+/*
+balance takes 2 doubles x and y and balances them with a given exponent threshold, adapted from splitting_doubles.cpp from PHCpack 
+*/
+void balance(double &x,double &y,int threshold);
 
 /*
 balance4 takes a split 4p double x (from indices a to b) on input and balances the exponents
@@ -80,4 +85,14 @@ vector<double> split8(vector<int> bits);
 split8pd(x) applies split8 to a vector of p-doubles x then returns the combined vector of 8p-doubles
 */
 vector<double> split8pd(vector<double> x,int p);
+
+/*
+mixbalance(x,a,b) takes a double-double split into 12 parts (4 for high, 8 for low), indicated from indices a to b on input, and balances the exponents
+*/
+void mixbalance(vector<double> &x, int a,int b);
+
+/*
+mixsplit2(x) takes a vector of double doubles  then splits the high part into 4, low into 8
+*/
+vector<double> mixsplit2(vector<double> x);
 #endif

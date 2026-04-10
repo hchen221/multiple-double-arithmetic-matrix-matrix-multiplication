@@ -6,15 +6,16 @@ using namespace std;
 
 #define p 2
 #define n 256
-#define q 4
+#define q 8
+#define pp 12
 
 #define M 8
 #define N 8
 #define K 4
 
 #define M_GLOBAL n
-#define N_GLOBAL n*q*p
-#define K_GLOBAL n*q*p
+#define N_GLOBAL n*pp
+#define K_GLOBAL n*pp
 
 __global__ void matmul(double *a, double *b, double *c) {
     int warpM = (blockIdx.x * blockDim.x + threadIdx.x) / warpSize;
@@ -48,20 +49,21 @@ void test(int expmin,int expmax) {
     vector<double> B = mat(n,p,expmin,expmax);
     vector<double> Aq;
     vector<double> Bq;
-    if (q==4) {
+    if (pp==12) { // mix only works if p=2
+        Aq = mixsplit2(A);
+        Bq = mixsplit2(B);
+    } else if (pp==4*p) {
         Aq = split4pd(A,p);
         Bq = split4pd(B,p);
-    } else if (q==8) {
+    } else if (pp==8*p) {
         Aq = split8pd(A,p);
         Bq = split8pd(B,p);
     }
-    //vector<double> A8D = bigA(A8,n,q*p);
-    //vector<double> B8D = bigB(B8,n,q*p);
     vector<double> AqD = Aq;
-    vector<double> BqD = bigB2(Bq,n,q*p);
+    vector<double> BqD = bigB2(Bq,n,pp);
     cout << "A,B in R^{" << n << "x" << n << "}, entries of "<< p << "-doubles\n\n";
     
-    vector<double> C1q = zeros(n,n,q*p);
+    vector<double> C1q = zeros(n,n,pp);
 
     cout << "Setup? Done." << endl;
     
@@ -101,10 +103,12 @@ void test(int expmin,int expmax) {
     float f_raw = M_GLOBAL*N_GLOBAL*(2*K_GLOBAL-1);
 
     cudaMemcpy(C1q.data(),C_d,M_GLOBAL*N_GLOBAL*sizeof(double),cudaMemcpyDeviceToHost);
-    vector<double> C1 = pllsqueeze(C1q,p,q);
+    vector<double> C1 = pllsqueeze(C1q,p,pp);
+    /*
     for (int i=0;i<C1.size();i=i+p) {
         balance(C1,i,i+p-1,53);
     }
+    */
     double df = (double)clock();
 
     cout << "TC? Finished. Raw performance? " << f_raw/t_raw << ". Total time? " << df-d0 << endl;
@@ -113,9 +117,6 @@ void test(int expmin,int expmax) {
     double h0 = (double)clock();
     int nfrag = min(32,n);
     vector<double> C2 = matmulTCnt(A,B,n,nfrag,p,t_CUDA);
-    for (int i=0;i<C2.size();i=i+p) {
-	balance(C2,i,i+p-1,53);
-    }
     double hf = (double)clock();
     float f_CUDA,add_ops,mul_ops;
     if (p==2) {
@@ -168,11 +169,21 @@ int main() {
     test(0,0);
     /*
     vector<double> A = mat(2,2,0,0);
-    vector<double> A8 = split4pd(A,2);
+    vector<double> Aq;
+    if (pp==12) { // mix only works if p=2
+        Aq = mixsplit2(A);
+    } else if (pp==4*p) {
+        Aq = split4pd(A,p);
+    } else if (pp==8*p) {
+        Aq = split8pd(A,p);
+    }
     int exp0,exp1;
-    double fr = frexp(A8[0],&exp0);
-    for (int i=1;i<8;i++) {
-	double fr = frexp(A8[i],&exp1);
+    for (int i=0;i<pp;i++) {
+	cout << Aq[i] << ",";
+    }
+    double fr = frexp(Aq[0],&exp0);
+    for (int i=1;i<pp;i++) {
+	double fr = frexp(Aq[i],&exp1);
 	cout << exp1-exp0 << endl;
 	exp0 = exp1;
     }

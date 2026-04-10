@@ -78,9 +78,11 @@ void renormhostbig(vector<double> &A,int n,int p);
 /*squeeze takes a matrix of q-split p doubles and condenses them*/
 vector<double> squeeze(vector<double> x,int p,int q);
 
-/*pllsqueeze2 is a parallel variant of squeeze, takes an n dimensional vector x of pq-doubles and places them in an n dimesnional vector of p-doubles y, uses pllsqueezekernel which uses 1 dimensional tiled threading, partitioning n into 64*/
+/*pllsqueeze2 is a parallel variant of squeeze, takes an n dimensional vector x of pq-doubles and places them in an n dimesnional vector of p-doubles y, uses pllsqueezekernel which uses 1 dimensional tiled threading, partitioning n into 64. pllmixsqueeze is a variant that squeezes a mixed split double double
+*/
 __global__ void pllsqueezekernel(double *x,double *y,int p,int q);
-vector<double> pllsqueeze(vector<double> x,int p,int q);
+__global__ void pllmixsqueeze(double *x,double *y);
+vector<double> pllsqueeze(vector<double> x,int p,int pp);
 
 #endif
 
