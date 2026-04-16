@@ -70,7 +70,7 @@ vector<int> bitform(double x) {
 /*
 random_double_bits(signbit,exponent) returns the bit representation of a random double with a given sign bit and exponent
 */
-vector<int> random_double_bits(int signbit,int exponent) {
+vector<int> random_double_bits(int signbit,int exponent,bool fixfirst) {
     vector<int> bits;
     bits.push_back(signbit);
     vector<int> expbits = expandexpbits(exponent);
@@ -78,6 +78,9 @@ vector<int> random_double_bits(int signbit,int exponent) {
     vector<int> fracbits;
     for (int i=0;i<52;i++) {
         fracbits.push_back(rand()%2);
+    }
+    if (fixfirst) {
+	fracbits[0] = 1;
     }
     bits.insert(bits.end(),fracbits.begin(),fracbits.end());
     return bits;

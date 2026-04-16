@@ -34,7 +34,7 @@ vector<int> bitform(double x);
 /*
 random_double_bits(signbit,exponent) returns the bit representation of a random double with a given sign bit and exponent
 */
-vector<int> random_double_bits(int signbit,int exponent);
+vector<int> random_double_bits(int signbit,int exponent,bool fixfirst=true);
 
 /*
 double_rep(bits) returns the numerical double of a 64 bit number

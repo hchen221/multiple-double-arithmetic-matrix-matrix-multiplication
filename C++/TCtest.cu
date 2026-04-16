@@ -5,9 +5,10 @@
 using namespace std;
 
 #define p 2
-#define n 256
+#define n 512
 #define q 8
 #define pp 12
+#define loop_ct 1 // 1 for correctness, 10000 for performance
 
 #define M 8
 #define N 8
@@ -96,14 +97,16 @@ void test(int expmin,int expmax) {
     cudaEventCreate(&T0);
     cudaEventCreate(&Tf);
     cudaEventRecord(T0);
-    matmul<<<gridDim,blockDim>>>(A_d,B_d,C_d);
+    for (int i=0;i<loop_ct;i++) {
+        matmul<<<gridDim,blockDim>>>(A_d,B_d,C_d);
+    }
     cudaEventRecord(Tf);
     cudaEventSynchronize(Tf);
     cudaEventElapsedTime(&t_raw,T0,Tf);
     float f_raw = M_GLOBAL*N_GLOBAL*(2*K_GLOBAL-1);
 
     cudaMemcpy(C1q.data(),C_d,M_GLOBAL*N_GLOBAL*sizeof(double),cudaMemcpyDeviceToHost);
-    vector<double> C1 = pllsqueeze(C1q,p,pp);
+    vector<double> C1 = pllntsqueeze(C1q,p,pp);
     /*
     for (int i=0;i<C1.size();i=i+p) {
         balance(C1,i,i+p-1,53);

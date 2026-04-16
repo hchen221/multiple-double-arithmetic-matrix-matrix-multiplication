@@ -31,6 +31,14 @@ vector<double> zeros(int m,int n, int p) {
     return A;
 }
 
+vector<double> part(vector<double> x,int p,int i) {
+    vector<double> xi;
+    for (int j=i;j<x.size();j+=p) {
+        xi.push_back(x[j]);
+    }
+    return xi;
+}
+
 /*bigA(A,n,p) takes an nxn matrix of p-double entries A and returns [A_1,...,A_p] row stacked, formatted row major*/
 vector<double> bigA(vector<double> A,int n,int p) {
     vector<double> AA;
@@ -381,66 +389,60 @@ void renormhostbig(vector<double> &A,int n,int p) {
     }
 }
 
-vector<double> squeeze(vector<double> x,int p,int q) {
-    int n = x.size()/(p*q);
-    vector<double> y = zeros(n,1,p);
-    for (int i=0;i<n;i++) {
-
-        y[p*i] = x[p*q*i];
-	for (int j=1;j<p*q;j++) {
-		if (p==2) {
-			ddf_inc_d(&y[p*i],&y[p*i+1],x[p*q*i+j]);
-		} else if (p==4) {
-			qdf_inc_d(&y[p*i],&y[p*i+1],&y[p*i+2],&y[p*i+3],x[p*q*i+j]);
-		} else if (p==8) {
-			odf_inc_d(&y[p*i],&y[p*i+1],&y[p*i+2],&y[p*i+3],&y[p*i+4],&y[p*i+5],&y[p*i+6],&y[p*i+7],x[p*q*i+j]);
-		} else if (p==16) {
-			hdf_inc_d(&y[p*i],&y[p*i+1],&y[p*i+2],&y[p*i+3],&y[p*i+4],&y[p*i+5],&y[p*i+6],&y[p*i+7],&y[p*i+8],&y[p*i+9],&y[p*i+10],&y[p*i+11],&y[p*i+12],&y[p*i+13],&y[p*i+14],&y[p*i+15],x[p*q*i+j]);
-        }
-    }
-
-    }
-    return y;
+__global__ void pllsqueeze_kernel_2_8(double *x1,double *x2,double *x3,double *x4,double *x5,double *x6,double *x7,double *x8,double *y1,double *y2) {
+    int i=blockDim.x*blockIdx.x+threadIdx.x;
+    ddf_inc_d(&y1[i],&y2[i],x1[i]);
+    ddf_inc_d(&y1[i],&y2[i],x2[i]);
+    ddf_inc_d(&y1[i],&y2[i],x3[i]);
+    ddf_inc_d(&y1[i],&y2[i],x4[i]);
+    ddf_inc_d(&y1[i],&y2[i],x5[i]);
+    ddf_inc_d(&y1[i],&y2[i],x6[i]);
+    ddf_inc_d(&y1[i],&y2[i],x7[i]);
+    ddf_inc_d(&y1[i],&y2[i],x8[i]);
 }
 
-__global__ void pllsqueezekernel(double *x,double *y,int p,int q) {
-    int i = blockDim.x*blockIdx.x+threadIdx.x;
-    y[p*i] = x[p*q*i];
-    for (int j=1;j<p*q;j++) {
-	if (p==2) {
-            ddf_inc_d(&y[p*i],&y[p*i+1],x[p*q*i+j]);
-	} else if (p==4) {
-	    qdf_inc_d(&y[p*i],&y[p*i+1],&y[p*i+2],&y[p*i+3],x[p*q*i+j]);
-	} else if (p==8) {
-	    odf_inc_d(&y[p*i],&y[p*i+1],&y[p*i+2],&y[p*i+3],&y[p*i+4],&y[p*i+5],&y[p*i+6],&y[p*i+7],x[p*q*i+j]);
-	} else if (p==16) {
-	    hdf_inc_d(&y[p*i],&y[p*i+1],&y[p*i+2],&y[p*i+3],&y[p*i+4],&y[p*i+5],&y[p*i+6],&y[p*i+7],&y[p*i+8],&y[p*i+9],&y[p*i+10],&y[p*i+11],&y[p*i+12],&y[p*i+13],&y[p*i+14],&y[p*i+15],x[p*q*i+j]);
-	}
-	__syncthreads();
-    }
-}
-
-__global__ void pllmixsqueeze(double *x,double *y) {
-   int i=blockDim.x*blockIdx.x+threadIdx.x;
-   y[2*i] = x[12*i];
-   y[2*i+1] = x[12*i+4];
-   for (int j=1;j<12;j++) {
-       ddf_inc_d(&y[2*i],&y[2*i+1],x[12*i+j]);
-       __syncthreads();
-   }
-}
-
-vector<double> pllsqueeze(vector<double> x,int p,int pp) {
-    int n = x.size()/pp;
-    vector<double> y = zeros(n,1,p);
-
-    double* x_d;
-    double* y_d;
-    cudaMalloc((void**)&x_d,n*pp*sizeof(double));
-    cudaMemcpy(x_d,x.data(),n*pp*sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&y_d,n*p*sizeof(double));
-    cudaMemcpy(y_d,y.data(),n*p*sizeof(double),cudaMemcpyHostToDevice);
-    
+vector<double> pllsqueeze_2_8(vector<double> x) {
+    int n = x.size()/8;
+    vector<double> X1 = part(x,8,0);
+    vector<double> X2 = part(x,8,1);
+    vector<double> X3 = part(x,8,2);
+    vector<double> X4 = part(x,8,3);
+    vector<double> X5 = part(x,8,4);
+    vector<double> X6 = part(x,8,5);
+    vector<double> X7 = part(x,8,6);
+    vector<double> X8 = part(x,8,7);
+    vector<double> Y1 = zeros(n,1,1);
+    vector<double> Y2 = zeros(n,1,1);
+    double* x1;
+    double* x2;
+    double* x3;
+    double* x4;
+    double* x5;
+    double* x6;
+    double* x7;
+    double* x8;
+    double* y1;
+    double* y2;
+    cudaMalloc((void**)&x1,n*sizeof(double));
+    cudaMemcpy(x1,X1.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x2,n*sizeof(double));
+    cudaMemcpy(x2,X2.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x3,n*sizeof(double));
+    cudaMemcpy(x3,X3.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x4,n*sizeof(double));
+    cudaMemcpy(x4,X4.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x5,n*sizeof(double));
+    cudaMemcpy(x5,X5.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x6,n*sizeof(double));
+    cudaMemcpy(x6,X6.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x7,n*sizeof(double));
+    cudaMemcpy(x7,X7.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x8,n*sizeof(double));
+    cudaMemcpy(x8,X8.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&y1,n*sizeof(double));
+    cudaMemcpy(y1,Y1.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&y2,n*sizeof(double));
+    cudaMemcpy(y2,Y2.data(),n*sizeof(double),cudaMemcpyHostToDevice);
     dim3 G;
     dim3 B;
     if (n <64) {
@@ -454,15 +456,478 @@ vector<double> pllsqueeze(vector<double> x,int p,int pp) {
         B.x = 64;
         B.y = 1;
     }
-
-    if (pp==12) {
-	pllmixsqueeze<<<G,B>>>(x_d,y_d);
-    } else {
-	int q = pp/p;
-	pllsqueezekernel<<<G,B>>>(x_d,y_d,p,q);
+    pllsqueeze_kernel_2_8<<<G,B>>>(x1,x2,x3,x4,x5,x6,x7,x8,y1,y2);
+    cudaMemcpy(Y1.data(),y1,n*sizeof(double),cudaMemcpyDeviceToHost);
+    cudaMemcpy(Y2.data(),y2,n*sizeof(double),cudaMemcpyDeviceToHost);
+    vector<double> y;
+    for (int i=0;i<n;i++) {
+        y.push_back(Y1[i]);
+        y.push_back(Y2[i]);
     }
-
-    cudaMemcpy(y.data(),y_d,n*p*sizeof(double),cudaMemcpyDeviceToHost);
-
     return y;
 }
+
+vector<double> pllntsqueeze_2_8(vector<double> x) {
+    int n = x.size()/8;
+    vector<double> X1 = part(x,8,0);
+    vector<double> X2 = part(x,8,1);
+    vector<double> X3 = part(x,8,2);
+    vector<double> X4 = part(x,8,3);
+    vector<double> X5 = part(x,8,4);
+    vector<double> X6 = part(x,8,5);
+    vector<double> X7 = part(x,8,6);
+    vector<double> X8 = part(x,8,7);
+    vector<double> Y1 = zeros(n,1,1);
+    vector<double> Y2 = zeros(n,1,1);
+    for (int i=0;i<n;i++) {
+        ddf_inc_d(&Y1[i],&Y2[i],X1[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X2[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X3[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X4[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X5[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X6[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X7[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X8[i]);
+    }
+    vector<double> y;
+    for (int i=0;i<n;i++) {
+        y.push_back(Y1[i]);
+        y.push_back(Y2[i]);
+    }
+    return y;
+}
+
+__global__ void pllsqueeze_kernel_2_12(double *x1,double *x2,double *x3,double *x4,double *x5,double *x6,double *x7,double *x8,double *x9,double *x10,double *x11,double *x12,double *y1,double *y2) {
+    int i=blockDim.x*blockIdx.x+threadIdx.x;
+    ddf_inc_d(&y1[i],&y2[i],x1[i]);
+    ddf_inc_d(&y1[i],&y2[i],x2[i]);
+    ddf_inc_d(&y1[i],&y2[i],x3[i]);
+    ddf_inc_d(&y1[i],&y2[i],x4[i]);
+    ddf_inc_d(&y1[i],&y2[i],x5[i]);
+    ddf_inc_d(&y1[i],&y2[i],x6[i]);
+    ddf_inc_d(&y1[i],&y2[i],x7[i]);
+    ddf_inc_d(&y1[i],&y2[i],x8[i]);
+    ddf_inc_d(&y1[i],&y2[i],x9[i]);
+    ddf_inc_d(&y1[i],&y2[i],x10[i]);
+    ddf_inc_d(&y1[i],&y2[i],x11[i]);
+    ddf_inc_d(&y1[i],&y2[i],x12[i]);
+}
+
+vector<double> pllsqueeze_2_12(vector<double> x) {
+    int n = x.size()/12;
+    vector<double> X1 = part(x,12,0);
+    vector<double> X2 = part(x,12,1);
+    vector<double> X3 = part(x,12,2);
+    vector<double> X4 = part(x,12,3);
+    vector<double> X5 = part(x,12,4);
+    vector<double> X6 = part(x,12,5);
+    vector<double> X7 = part(x,12,6);
+    vector<double> X8 = part(x,12,7);
+    vector<double> X9 = part(x,12,8);
+    vector<double> X10 = part(x,12,9);
+    vector<double> X11 = part(x,12,10);
+    vector<double> X12 = part(x,12,11);
+    vector<double> Y1 = zeros(n,1,1);
+    vector<double> Y2 = zeros(n,1,1);
+    
+    double* x1;
+    double* x2;
+    double* x3;
+    double* x4;
+    double* x5;
+    double* x6;
+    double* x7;
+    double* x8;
+    double* x9;
+    double* x10;
+    double* x11;
+    double* x12;
+    double* y1;
+    double* y2;
+    cudaMalloc((void**)&x1,n*sizeof(double));
+    cudaMemcpy(x1,X1.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x2,n*sizeof(double));
+    cudaMemcpy(x2,X2.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x3,n*sizeof(double));
+    cudaMemcpy(x3,X3.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x4,n*sizeof(double));
+    cudaMemcpy(x4,X4.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x5,n*sizeof(double));
+    cudaMemcpy(x5,X5.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x6,n*sizeof(double));
+    cudaMemcpy(x6,X6.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x7,n*sizeof(double));
+    cudaMemcpy(x7,X7.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x8,n*sizeof(double));
+    cudaMemcpy(x8,X8.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x9,n*sizeof(double));
+    cudaMemcpy(x9,X9.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x10,n*sizeof(double));
+    cudaMemcpy(x10,X10.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x11,n*sizeof(double));
+    cudaMemcpy(x11,X11.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x12,n*sizeof(double));
+    cudaMemcpy(x12,X12.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&y1,n*sizeof(double));
+    cudaMemcpy(y1,Y1.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&y2,n*sizeof(double));
+    cudaMemcpy(y2,Y2.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+
+    dim3 G;
+    dim3 B;
+    if (n <64) {
+        G.x = 1;
+        G.y = 1;
+        B.x = n;
+        B.y = 1;
+    } else {
+        G.x = n/64; // assume 64|n
+        G.y = 1;
+        B.x = 64;
+        B.y = 1;
+    }
+    pllsqueeze_kernel_2_12<<<G,B>>>(x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,y1,y2);
+    cudaMemcpy(Y1.data(),y1,n*sizeof(double),cudaMemcpyDeviceToHost);
+    cudaMemcpy(Y2.data(),y2,n*sizeof(double),cudaMemcpyDeviceToHost);
+    vector<double> y;
+    for (int i=0;i<n;i++) {
+	y.push_back(Y1[i]);
+	y.push_back(Y2[i]);
+    }
+    return y;
+}
+
+vector<double> pllntsqueeze_2_12(vector<double> x) {
+    int n = x.size()/12;
+    vector<double> X1 = part(x,12,0);
+    vector<double> X2 = part(x,12,1);
+    vector<double> X3 = part(x,12,2);
+    vector<double> X4 = part(x,12,3);
+    vector<double> X5 = part(x,12,4);
+    vector<double> X6 = part(x,12,5);
+    vector<double> X7 = part(x,12,6);
+    vector<double> X8 = part(x,12,7);
+    vector<double> X9 = part(x,12,8);
+    vector<double> X10 = part(x,12,9);
+    vector<double> X11 = part(x,12,10);
+    vector<double> X12 = part(x,12,11);
+    vector<double> Y1 = zeros(n,1,1);
+    vector<double> Y2 = zeros(n,1,1);
+    for (int i=0;i<n;i++) {
+        ddf_inc_d(&Y1[i],&Y2[i],X1[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X2[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X3[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X4[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X5[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X6[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X7[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X8[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X9[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X10[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X11[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X12[i]);
+    }
+    vector<double> y;
+    for (int i=0;i<n;i++) {
+        y.push_back(Y1[i]);
+        y.push_back(Y2[i]);
+    }
+    return y;
+}
+
+__global__ void pllsqueeze_kernel_2_16(double *x1,double *x2,double *x3,double *x4,double *x5,double *x6,double *x7,double *x8,double *x9,double *x10,double *x11,double *x12,double *x13,double *x14,double *x15,double *x16,double *y1,double *y2) {
+    int i=blockDim.x*blockIdx.x+threadIdx.x;
+    ddf_inc_d(&y1[i],&y2[i],x1[i]);
+    ddf_inc_d(&y1[i],&y2[i],x2[i]);
+    ddf_inc_d(&y1[i],&y2[i],x3[i]);
+    ddf_inc_d(&y1[i],&y2[i],x4[i]);
+    ddf_inc_d(&y1[i],&y2[i],x5[i]);
+    ddf_inc_d(&y1[i],&y2[i],x6[i]);
+    ddf_inc_d(&y1[i],&y2[i],x7[i]);
+    ddf_inc_d(&y1[i],&y2[i],x8[i]);
+    ddf_inc_d(&y1[i],&y2[i],x9[i]);
+    ddf_inc_d(&y1[i],&y2[i],x10[i]);
+    ddf_inc_d(&y1[i],&y2[i],x11[i]);
+    ddf_inc_d(&y1[i],&y2[i],x12[i]);
+    ddf_inc_d(&y1[i],&y2[i],x13[i]);
+    ddf_inc_d(&y1[i],&y2[i],x14[i]);
+    ddf_inc_d(&y1[i],&y2[i],x15[i]);
+    ddf_inc_d(&y1[i],&y2[i],x16[i]);
+}
+
+vector<double> pllsqueeze_2_16(vector<double> x) {
+    int n = x.size()/16;
+    vector<double> X1 = part(x,16,0);
+    vector<double> X2 = part(x,16,1);
+    vector<double> X3 = part(x,16,2);
+    vector<double> X4 = part(x,16,3);
+    vector<double> X5 = part(x,16,4);
+    vector<double> X6 = part(x,16,5);
+    vector<double> X7 = part(x,16,6);
+    vector<double> X8 = part(x,16,7);
+    vector<double> X9 = part(x,16,8);
+    vector<double> X10 = part(x,16,9);
+    vector<double> X11 = part(x,16,10);
+    vector<double> X12 = part(x,16,11);
+    vector<double> X13 = part(x,16,12);
+    vector<double> X14 = part(x,16,13);
+    vector<double> X15 = part(x,16,14);
+    vector<double> X16 = part(x,16,15);
+    vector<double> Y1 = zeros(n,1,1);
+    vector<double> Y2 = zeros(n,1,1);
+    double* x1;
+    double* x2;
+    double* x3;
+    double* x4;
+    double* x5;
+    double* x6;
+    double* x7;
+    double* x8;
+    double* x9;
+    double* x10;
+    double* x11;
+    double* x12;
+    double* x13;
+    double* x14;
+    double* x15;
+    double* x16;
+    double* y1;
+    double* y2;
+    cudaMalloc((void**)&x1,n*sizeof(double));
+    cudaMemcpy(x1,X1.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x2,n*sizeof(double));
+    cudaMemcpy(x2,X2.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x3,n*sizeof(double));
+    cudaMemcpy(x3,X3.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x4,n*sizeof(double));
+    cudaMemcpy(x4,X4.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x5,n*sizeof(double));
+    cudaMemcpy(x5,X5.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x6,n*sizeof(double));
+    cudaMemcpy(x6,X6.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x7,n*sizeof(double));
+    cudaMemcpy(x7,X7.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x8,n*sizeof(double));
+    cudaMemcpy(x8,X8.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x9,n*sizeof(double));
+    cudaMemcpy(x9,X9.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x10,n*sizeof(double));
+    cudaMemcpy(x10,X10.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x11,n*sizeof(double));
+    cudaMemcpy(x11,X11.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x12,n*sizeof(double));
+    cudaMemcpy(x12,X12.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x13,n*sizeof(double));
+    cudaMemcpy(x13,X13.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x14,n*sizeof(double));
+    cudaMemcpy(x14,X14.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x15,n*sizeof(double));
+    cudaMemcpy(x15,X15.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x16,n*sizeof(double));
+    cudaMemcpy(x16,X16.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&y1,n*sizeof(double));
+    cudaMemcpy(y1,Y1.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&y2,n*sizeof(double));
+    cudaMemcpy(y2,Y2.data(),n*sizeof(double),cudaMemcpyHostToDevice);
+    dim3 G;
+    dim3 B;
+    if (n <64) {
+        G.x = 1;
+        G.y = 1;
+        B.x = n;
+        B.y = 1;
+    } else {
+        G.x = n/64; // assume 64|n
+        G.y = 1;
+        B.x = 64;
+        B.y = 1;
+    }
+    pllsqueeze_kernel_2_16<<<G,B>>>(x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15,x16,y1,y2);
+    cudaMemcpy(Y1.data(),y1,n*sizeof(double),cudaMemcpyDeviceToHost);
+    cudaMemcpy(Y2.data(),y2,n*sizeof(double),cudaMemcpyDeviceToHost);
+    vector<double> y;
+    for (int i=0;i<n;i++) {
+        y.push_back(Y1[i]);
+        y.push_back(Y2[i]);
+    }
+    return y;
+}
+
+vector<double> pllntsqueeze_2_16(vector<double> x) {
+    int n = x.size()/16;
+    vector<double> X1 = part(x,16,0);
+    vector<double> X2 = part(x,16,1);
+    vector<double> X3 = part(x,16,2);
+    vector<double> X4 = part(x,16,3);
+    vector<double> X5 = part(x,16,4);
+    vector<double> X6 = part(x,16,5);
+    vector<double> X7 = part(x,16,6);
+    vector<double> X8 = part(x,16,7);
+    vector<double> X9 = part(x,16,8);
+    vector<double> X10 = part(x,16,9);
+    vector<double> X11 = part(x,16,10);
+    vector<double> X12 = part(x,16,11);
+    vector<double> X13 = part(x,16,12);
+    vector<double> X14 = part(x,16,13);
+    vector<double> X15 = part(x,16,14);
+    vector<double> X16 = part(x,16,15);
+    vector<double> Y1 = zeros(n,1,1);
+    vector<double> Y2 = zeros(n,1,1);
+    for (int i=0;i<n;i++) {
+        ddf_inc_d(&Y1[i],&Y2[i],X1[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X2[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X3[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X4[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X5[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X6[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X7[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X8[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X9[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X10[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X11[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X12[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X13[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X14[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X15[i]);
+        ddf_inc_d(&Y1[i],&Y2[i],X16[i]);
+    }
+    vector<double> y;
+    for (int i=0;i<n;i++) {
+        y.push_back(Y1[i]);
+        y.push_back(Y2[i]);
+    }
+    return y;
+}
+
+vector<double> pllsqueeze(vector<double> x,int p,int pp) {
+    if (pp==12) {
+	return pllsqueeze_2_12(x);
+    } else if (p==2) {
+	if (pp==8) {
+            return pllsqueeze_2_8(x);
+	} else if (pp==16) {
+	    return pllsqueeze_2_16(x);
+	}
+    }
+}
+    /*
+    } else if (p==4) {
+	if (pp=8) {
+            return pllsqueeze_4_8(x);
+        } else if (pp=16) {
+            return pllsqueeze_4_16(x);
+        }
+    } else if (p==8) {
+	if (pp=8) {
+            return pllsqueeze_8_8(x);
+        } else if (pp=16) {
+            return pllsqueeze_8_16(x);
+        }
+    } else if (p==16) {
+	if (pp=8) {
+            return pllsqueeze_16_8(x);
+        } else if (pp=16) {
+            return pllsqueeze_16_16(x);
+        }
+    }
+    */
+
+vector<double> pllntsqueeze(vector<double> x,int p,int pp) {
+    if (pp==12) {
+        return pllntsqueeze_2_12(x);
+    } else if (p==2) {
+        if (pp==8) {
+            return pllntsqueeze_2_8(x);
+        } else if (pp==16) {
+            return pllntsqueeze_2_16(x);
+        }
+    }
+}
+    /*
+    } else if (p==4) {
+        if (pp=8) {
+            return pllntsqueeze_4_8(x);
+        } else if (pp=16) {
+            return pllntsqueeze_4_16(x);
+        }
+    } else if (p==8) {
+        if (pp=8) {
+            return pllntsqueeze_8_8(x);
+        } else if (pp=16) {
+            return pllntsqueeze_8_16(x);
+        }
+    } else if (p==16) {
+        if (pp=8) {
+            return pllntsqueeze_16_8(x);
+        } else if (pp=16) {
+            return pllntsqueeze_16_16(x);
+        }
+    }
+    */
+
+/*
+   Python code to generate instructions for pllsqueeze_kernel_p_pp, pllsqueeze_p_pp, and pllntsqueeze_p_pp
+
+def pllsqueeze_kernel(p,pp):
+    code = f"__global__ void pllsqueeze_kernel_{p}_{pp}("+",".join([f"double *x{j+1}" for j in range(pp)]+[f"double *y{i+1}" for i in range(p)])+") {\n"
+    code += "    int i=blockDim.x*blockIdx.x+threadIdx.x;\n"
+    if p==2:
+        mode = "ddf"
+    elif p==4:
+        mode = "qdf"
+    elif p==8:
+        mode = "odf"
+    elif p==16:
+        mode = "hdf"
+    for j in range(pp):
+        code += f"    {mode}_inc_d("+",".join([f"&y{l+1}[i]" for l in range(p)])+f",x{j+1}[i]);\n"
+    return code+"}"
+
+def pllsqueeze(p,pp):
+    code = f"vector<double> pllsqueeze_{p}_{pp}(vector<double> x)"+" {\n"
+    code += f"    int n = x.size()/{pp};\n"
+    for j in range(pp):
+        code += f"    vector<double> X{j+1} = part(x,{pp},{j});\n"
+    for i in range(p):
+        code += f"    vector<double> Y{i+1} = zeros(n,1,1);\n"
+    code += "\n".join([f"double *x{j+1};" for j in range(pp)]+[f"double* y{i+1};" for i in range(p)])+";\n"
+    for j in range(pp):
+        code += f"    cudaMalloc((void**)&x{j+1},n*sizeof(double));\n"
+        code += f"    cudaMemcpy(x{j+1},X{j+1}.data(),n*sizeof(double),cudaMemcpyHostToDevice);\n"
+    for i in range(p):
+        code += f"    cudaMalloc((void**)&y{i+1},n*sizeof(double));\n"
+        code += f"    cudaMemcpy(y{i+1},Y{i+1}.data(),n*sizeof(double),cudaMemcpyHostToDevice);\n"
+    code += "    dim3 G;\n    dim3 B;\n    if (n <64) {\n        G.x = 1;\n        G.y = 1;\n        B.x = n;\n        B.y = 1;\n    } else {\n        G.x = n/64; // assume 64|n\n        G.y = 1;\n        B.x = 64;\n        B.y = 1;\n    }"
+    code += f"    pllsqueeze_{p}_{pp}<<<G,B>>>("+",".join([f"x{j+1}" for j in range(pp)]+[f"y{i+1}" for i in range(p)])+");\n"
+    for i in range(p):
+        code += f"    cudaMemcpy(Y{i+1}.data(),y{i+1},n*sizeof(double),cudaMemcpyDeviceToHost);\n"
+    code += "    vector<double> y;\n    for (int i=0;i<n;i++) {\n"
+    for j in range(p):
+        code += f"        y.push_back(Y{j+1}[i]);\n"
+    return code + "    }\n    return y;\n}"
+
+
+def pllntsqueeze(p,pp):
+    code = f"vector<double> pllntsqueeze_{p}_{pp}(vector<double> x)"+" {\n"
+    code += f"    int n = x.size()/{pp};\n"
+    for j in range(pp):
+        code += f"    vector<double> X{j+1} = part(x,{pp},{j});\n"
+    for i in range(p):
+        code += f"    vector<double> Y{i+1} = zeros(n,1,1);\n"
+    if p==2:
+        mode = "ddf"
+    elif p==4:
+        mode = "qdf"
+    elif p==8:
+        mode = "odf"
+    elif p==16:
+        mode = "hdf"
+    code += "    for (int i=0;i<n;i++) {\n"
+    for j in range(pp):
+        code += f"        {mode}_inc_d("+",".join([f"&Y{l+1}[i]" for l in range(p)])+f",X{j+1}[i]);\n"
+    code += "    }\n    vector<double> y;\n    for (int i=0;i<n;i++) {\n"
+    for j in range(p):
+        code += f"        y.push_back(Y{j+1}[i]);\n"
+    return code + "    }\n    return y;\n}"
+*/
+

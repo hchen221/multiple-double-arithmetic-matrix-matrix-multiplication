@@ -27,6 +27,11 @@ zeros(m,n,p) returns a matrix of all 0's
 */
 vector<double> zeros(int m,int n, int p);
 
+/*
+part(x,p,i) takes a vector of p-doubles x and returns the ith part component wise
+*/
+vector<double> part(vector<double> x,int p,int i);
+
 /*bigA(A,n,p) takes an nxn matrix of p-double entries A and returns [A_1,...,A_p] stacked row wise, formatted row major*/
 vector<double> bigA(vector<double> A,int n,int p);
 
@@ -75,14 +80,20 @@ void renormhost(vector<double> &A,int n,int p);
 /*renormhostbig is equivalent to renormbigA but is done purely on the host*/
 void renormhostbig(vector<double> &A,int n,int p);
 
-/*squeeze takes a matrix of q-split p doubles and condenses them*/
-vector<double> squeeze(vector<double> x,int p,int q);
-
-/*pllsqueeze2 is a parallel variant of squeeze, takes an n dimensional vector x of pq-doubles and places them in an n dimesnional vector of p-doubles y, uses pllsqueezekernel which uses 1 dimensional tiled threading, partitioning n into 64. pllmixsqueeze is a variant that squeezes a mixed split double double
+/*pllsqueeze takes an n dimensional vector x of pp-doubles and places them in an n dimesnional vector of p-doubles y, uses pllsqueeze_kernel which uses 1 dimensional tiled threading, partitioning n into 64. pllsqueeze_p_pp and squeeze_p_pp are hard coded variants for specific values of p and pp
+pllntsqueeze is a non-CUDA version done purely on the host
 */
-__global__ void pllsqueezekernel(double *x,double *y,int p,int q);
-__global__ void pllmixsqueeze(double *x,double *y);
+__global__ void pllsqueeze_kernel_2_8(double *x1,double *x2,double *x3,double *x4,double *x5,double *x6,double *x7,double *x8,double *y1,double *y2);
+vector<double> pllsqueeze_2_8(vector<double> x);
+vector<double> pllntsqueeze_2_8(vector<double> x);
+__global__ void pllsqueeze_kernel_2_12(double *x1,double *x2,double *x3,double *x4,double *x5,double *x6,double *x7,double *x8,double *x9,double *x10,double *x11,double *x12,double *y1,double *y2);
+vector<double> pllsqueeze_2_12(vector<double> x);
+vector<double> pllntsqueeze_2_12(vector<double> x);
+__global__ void pllsqueeze_kernel_2_16(double *x1,double *x2,double *x3,double *x4,double *x5,double *x6,double *x7,double *x8,double *x9,double *x10,double *x11,double *x12,double *x13,double *x14,double *x15,double *x16,double *y1,double *y2);
+vector<double> pllsqueeze_2_16(vector<double> x);
+vector<double> pllntsqueeze_2_16(vector<double> x);
 vector<double> pllsqueeze(vector<double> x,int p,int pp);
+vector<double> pllntsqueeze(vector<double> x,int p,int pp);
 
 #endif
 
