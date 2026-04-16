@@ -6,8 +6,8 @@ using namespace std;
 
 #define p 2
 #define n 512
-#define q 8
-#define pp 12
+#define q 4
+#define pp q*p
 #define loop_ct 1 // 1 for correctness, 10000 for performance
 
 #define M 8
@@ -97,9 +97,11 @@ void test(int expmin,int expmax) {
     cudaEventCreate(&T0);
     cudaEventCreate(&Tf);
     cudaEventRecord(T0);
+    double t0 = (double)clock();
     for (int i=0;i<loop_ct;i++) {
         matmul<<<gridDim,blockDim>>>(A_d,B_d,C_d);
     }
+    double tf = (double)clock();
     cudaEventRecord(Tf);
     cudaEventSynchronize(Tf);
     cudaEventElapsedTime(&t_raw,T0,Tf);
@@ -114,7 +116,7 @@ void test(int expmin,int expmax) {
     */
     double df = (double)clock();
 
-    cout << "TC? Finished. Raw performance? " << f_raw/t_raw << ". Wall clock time? " << (df-d0)/(double)CLOCKS_PER_SEC << endl;
+    cout << "TC? Finished. Raw performance? " << f_raw/t_raw << ". Wall clock time? " << (df-d0)/(double)CLOCKS_PER_SEC << "For Tensor Core? " << (tf-t0)/(double)CLOCKS_PER_SEC << endl;
 
     float t_CUDA;
     double h0 = (double)clock();
