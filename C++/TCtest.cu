@@ -114,7 +114,7 @@ void test(int expmin,int expmax) {
     */
     double df = (double)clock();
 
-    cout << "TC? Finished. Raw performance? " << f_raw/t_raw << ". Total time? " << df-d0 << endl;
+    cout << "TC? Finished. Raw performance? " << f_raw/t_raw << ". Wall clock time? " << (df-d0)/(double)CLOCKS_PER_SEC << endl;
 
     float t_CUDA;
     double h0 = (double)clock();
@@ -137,7 +137,7 @@ void test(int expmin,int expmax) {
     }
     f_CUDA = mul_ops+add_ops;
 
-    cout << "CUDA? Finished. Performance? " << f_CUDA/t_CUDA << endl;
+    cout << "CUDA? Finished. Performance? " << f_CUDA/t_CUDA << ". Wall clock time? " << (hf-h0)/(double)CLOCKS_PER_SEC << endl;
     
     cout << "TC C[1,1]? (";
     for (int i=0;i<p;i++) {
