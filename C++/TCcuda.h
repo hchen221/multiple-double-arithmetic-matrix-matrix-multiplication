@@ -95,5 +95,12 @@ vector<double> pllntsqueeze_2_16(vector<double> x);
 vector<double> pllsqueeze(vector<double> x,int p,int pp);
 vector<double> pllntsqueeze(vector<double> x,int p,int pp);
 
+/*pllsqueeze_p_pp_old and pllsqueeze_old are variants of the parallel squeezing algorithms that compute the indices in the arrays that correspond to the correct position in the combined p-double representation without having to create auxiliary arrays and vectors*/
+__global__ void pllsqueeze_2_pp_old(double *x,double *y,int pp);
+__global__ void pllsqueeze_4_pp_old(double *x,double *y,int pp);
+__global__ void pllsqueeze_8_pp_old(double *x,double *y,int pp);
+__global__ void pllsqueeze_16_pp_old(double *x,double *y,int pp);
+vector<double> pllsqueeze_old(vector<double> x,int p,int pp);
+
 #endif
 

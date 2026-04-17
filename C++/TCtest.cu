@@ -108,7 +108,7 @@ void test(int expmin,int expmax) {
     float f_raw = M_GLOBAL*N_GLOBAL*(2*K_GLOBAL-1);
 
     cudaMemcpy(C1q.data(),C_d,M_GLOBAL*N_GLOBAL*sizeof(double),cudaMemcpyDeviceToHost);
-    vector<double> C1 = pllntsqueeze(C1q,p,pp);
+    vector<double> C1 = pllsqueeze_old(C1q,p,pp);
     /*
     for (int i=0;i<C1.size();i=i+p) {
         balance(C1,i,i+p-1,53);
@@ -116,7 +116,7 @@ void test(int expmin,int expmax) {
     */
     double df = (double)clock();
 
-    cout << "TC? Finished. Raw performance? " << f_raw/t_raw << ". Wall clock time? " << (df-d0)/(double)CLOCKS_PER_SEC << "For Tensor Core? " << (tf-t0)/(double)CLOCKS_PER_SEC << endl;
+    cout << "TC? Finished. Raw performance? " << f_raw/t_raw << ". Wall clock time? " << (df-d0)/(double)CLOCKS_PER_SEC << ". For Tensor Core alone? " << (tf-t0)/(double)CLOCKS_PER_SEC << endl;
 
     float t_CUDA;
     double h0 = (double)clock();

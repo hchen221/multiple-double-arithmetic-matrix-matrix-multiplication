@@ -865,6 +865,75 @@ vector<double> pllntsqueeze(vector<double> x,int p,int pp) {
     }
     */
 
+__global__ void pllsqueeze_2_pp_old(double *x,double *y,int pp) {
+   int i=blockDim.x*blockIdx.x+threadIdx.x;
+   for (int j=0;j<pp;j++) {
+       ddf_inc_d(&y[2*i],&y[2*i+1],x[pp*i+j]);
+       __syncthreads();
+   }
+}
+
+__global__ void pllsqueeze_4_pp_old(double *x,double *y,int pp) {
+   int i=blockDim.x*blockIdx.x+threadIdx.x;
+   for (int j=0;j<pp;j++) {
+       qdf_inc_d(&y[4*i],&y[4*i+1],&y[4*i+2],&y[4*i+3],x[pp*i+j]);
+       __syncthreads();
+   }
+}
+
+__global__ void pllsqueeze_8_pp_old(double *x,double *y,int pp) {
+   int i=blockDim.x*blockIdx.x+threadIdx.x;
+   for (int j=0;j<pp;j++) {
+       odf_inc_d(&y[8*i],&y[8*i+1],&y[8*i+2],&y[8*i+3],&y[8*i+4],&y[8*i+5],&y[8*i+6],&y[8*i+7],x[pp*i+j]);
+       __syncthreads();
+   }
+}
+
+__global__ void pllsqueeze_16_pp_old(double *x,double *y,int pp) {
+   int i=blockDim.x*blockIdx.x+threadIdx.x;
+   for (int j=0;j<pp;j++) {
+       hdf_inc_d(&y[16*i],&y[16*i+1],&y[16*i+2],&y[16*i+3],&y[16*i+4],&y[16*i+5],&y[16*i+6],&y[16*i+7],&y[16*i+8],&y[16*i+9],&y[16*i+10],&y[16*i+11],&y[16*i+12],&y[16*i+13],&y[16*i+14],&y[16*i+15],x[pp*i+j]);
+       __syncthreads();
+   }
+}
+
+vector<double> pllsqueeze_old(vector<double> x,int p,int pp) {
+    int n = x.size()/pp;
+    vector<double> y = zeros(n,1,p);
+
+    double* x_d;
+    double* y_d;
+    cudaMalloc((void**)&x_d,n*pp*sizeof(double));
+    cudaMemcpy(x_d,x.data(),n*pp*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&y_d,n*p*sizeof(double));
+    cudaMemcpy(y_d,y.data(),n*p*sizeof(double),cudaMemcpyHostToDevice);
+    dim3 G;
+    dim3 B;
+    if (n <64) {
+        G.x = 1;
+        G.y = 1;
+        B.x = n;
+        B.y = 1;
+    } else {
+        G.x = n/64; // assume 64|n
+        G.y = 1;
+        B.x = 64;
+        B.y = 1;
+    }
+    if (p==2) {
+	pllsqueeze_2_pp_old<<<G,B>>>(x_d,y_d,pp);
+    } else if (p==4) {
+	pllsqueeze_4_pp_old<<<G,B>>>(x_d,y_d,pp);
+    } else if (p==8) {
+        pllsqueeze_8_pp_old<<<G,B>>>(x_d,y_d,pp);
+    } else if (p==16) {
+        pllsqueeze_16_pp_old<<<G,B>>>(x_d,y_d,pp);
+    }
+    cudaMemcpy(y.data(),y_d,n*p*sizeof(double),cudaMemcpyDeviceToHost);
+    return y;
+}
+
+
 /*
    Python code to generate instructions for pllsqueeze_kernel_p_pp, pllsqueeze_p_pp, and pllntsqueeze_p_pp
 
