@@ -4,7 +4,7 @@
 #include <ctime>
 using namespace std;
 
-#define p 2
+#define p 4
 #define n 512
 #define q 4
 #define pp q*p

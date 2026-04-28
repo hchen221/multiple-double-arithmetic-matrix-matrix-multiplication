@@ -152,7 +152,7 @@ __global__ void qdmm(double *A,double *B,double *C,int n)
     for(int k=0; k<n; k++)
     {
         a1 = A[r*n*4+k*4]; a2 = A[r*n*4+k*4+1]; a3 = A[r*n*4+k*4+2]; a4 = A[r*n*4+k*4+3];
-        b1 = B[r*n*4+k*4]; b2 = B[r*n*4+k*4+1]; b3 = B[r*n*4+k*4+2]; b4 = B[r*n*4+k*4+3];
+        b1 = B[k*n*4+c*4]; b2 = B[k*n*4+c*4+1]; b3 = B[k*n*4+c*4+2]; b4 = B[k*n*4+c*4+3];
 
         qdf_mul(a1,a2,a3,a4,b1,b2,b3,b4,&c1,&c2,&c3,&c4);
         qdf_add(prd1,prd2,prd3,prd4,c1,c2,c3,c4,&prd1,&prd2,&prd3,&prd4);
@@ -812,22 +812,22 @@ vector<double> pllsqueeze(vector<double> x,int p,int pp) {
 }
     /*
     } else if (p==4) {
-	if (pp=8) {
-            return pllsqueeze_4_8(x);
-        } else if (pp=16) {
+	if (pp=16) {
             return pllsqueeze_4_16(x);
+        } else if (pp=32) {
+            return pllsqueeze_4_32(x);
         }
     } else if (p==8) {
-	if (pp=8) {
-            return pllsqueeze_8_8(x);
-        } else if (pp=16) {
-            return pllsqueeze_8_16(x);
+	if (pp=32) {
+            return pllsqueeze_8_32(x);
+        } else if (pp=64) {
+            return pllsqueeze_8_64(x);
         }
     } else if (p==16) {
-	if (pp=8) {
-            return pllsqueeze_16_8(x);
-        } else if (pp=16) {
-            return pllsqueeze_16_16(x);
+	if (pp=64) {
+            return pllsqueeze_16_64(x);
+        } else if (pp=128) {
+            return pllsqueeze_16_128(x);
         }
     }
     */
@@ -845,22 +845,22 @@ vector<double> pllntsqueeze(vector<double> x,int p,int pp) {
 }
     /*
     } else if (p==4) {
-        if (pp=8) {
-            return pllntsqueeze_4_8(x);
-        } else if (pp=16) {
+        if (pp=16) {
             return pllntsqueeze_4_16(x);
+        } else if (pp=32) {
+            return pllntsqueeze_4_32(x);
         }
     } else if (p==8) {
-        if (pp=8) {
-            return pllntsqueeze_8_8(x);
-        } else if (pp=16) {
-            return pllntsqueeze_8_16(x);
+        if (pp=32) {
+            return pllntsqueeze_8_32(x);
+        } else if (pp=64) {
+            return pllntsqueeze_8_64(x);
         }
     } else if (p==16) {
-        if (pp=8) {
-            return pllntsqueeze_16_8(x);
-        } else if (pp=16) {
-            return pllntsqueeze_16_16(x);
+        if (pp=64) {
+            return pllntsqueeze_16_64(x);
+        } else if (pp=128) {
+            return pllntsqueeze_16_128(x);
         }
     }
     */
