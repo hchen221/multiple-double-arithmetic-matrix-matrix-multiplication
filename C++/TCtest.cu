@@ -5,7 +5,7 @@
 using namespace std;
 
 #define p 4
-#define n 1024
+#define n 4096
 #define q 4
 #define pp q*p
 #define loop_ct 1 // 1 for correctness, 10000 for performance
@@ -74,12 +74,12 @@ void test(int expmin,int expmax) {
     double* B_d;
     double* C_d;
 
-    cudaMalloc((void**)&A_d,M_GLOBAL*K_GLOBAL*sizeof(double));
-    cudaMemcpy(A_d,AqD.data(),M_GLOBAL*K_GLOBAL*sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&B_d,K_GLOBAL*N_GLOBAL*sizeof(double));
-    cudaMemcpy(B_d,BqD.data(),K_GLOBAL*N_GLOBAL*sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&C_d,M_GLOBAL*N_GLOBAL*sizeof(double));
-    cudaMemcpy(C_d,C1q.data(),M_GLOBAL*N_GLOBAL*sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&A_d,(float)M_GLOBAL*(float)K_GLOBAL*(float)sizeof(double));
+    cudaMemcpy(A_d,AqD.data(),(float)M_GLOBAL*(float)K_GLOBAL*(float)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&B_d,(float)K_GLOBAL*(float)N_GLOBAL*(float)sizeof(double));
+    cudaMemcpy(B_d,BqD.data(),(float)K_GLOBAL*(float)N_GLOBAL*(float)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&C_d,(float)M_GLOBAL*(float)N_GLOBAL*(float)sizeof(double));
+    cudaMemcpy(C_d,C1q.data(),(float)M_GLOBAL*(float)N_GLOBAL*(float)sizeof(double),cudaMemcpyHostToDevice);
 
     dim3 gridDim;
     dim3 blockDim;
@@ -107,7 +107,7 @@ void test(int expmin,int expmax) {
     cudaEventElapsedTime(&t_raw,T0,Tf);
     float f_raw = (float)M_GLOBAL*(float)N_GLOBAL*(2.0*(float)K_GLOBAL-1.0);
 
-    cudaMemcpy(C1q.data(),C_d,M_GLOBAL*N_GLOBAL*sizeof(double),cudaMemcpyDeviceToHost);
+    cudaMemcpy(C1q.data(),C_d,(float)M_GLOBAL*(float)N_GLOBAL*(float)sizeof(double),cudaMemcpyDeviceToHost);
     vector<double> C1 = pllsqueeze_old(C1q,p,pp);
     double df = (double)clock();
 

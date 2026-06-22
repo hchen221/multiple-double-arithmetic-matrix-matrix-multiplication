@@ -26,7 +26,7 @@ matmatTC:
 	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCcuda.cu
 	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCtest.cu
 	nvcc -ccbin=$(GPP) floatybits.o TCcuda.o TCtest.o -o mytest
-	./mytest
+	nohup ./mytest &
 
 matmatTC2:
 	nvcc -c -rdc=true floatybits.cu
