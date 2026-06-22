@@ -5,7 +5,7 @@
 using namespace std;
 
 #define p 4
-#define n 512
+#define n 1024
 #define q 4
 #define pp q*p
 #define loop_ct 1 // 1 for correctness, 10000 for performance
@@ -105,18 +105,13 @@ void test(int expmin,int expmax) {
     cudaEventRecord(Tf);
     cudaEventSynchronize(Tf);
     cudaEventElapsedTime(&t_raw,T0,Tf);
-    float f_raw = M_GLOBAL*N_GLOBAL*(2*K_GLOBAL-1);
+    float f_raw = (float)M_GLOBAL*(float)N_GLOBAL*(2.0*(float)K_GLOBAL-1.0);
 
     cudaMemcpy(C1q.data(),C_d,M_GLOBAL*N_GLOBAL*sizeof(double),cudaMemcpyDeviceToHost);
     vector<double> C1 = pllsqueeze_old(C1q,p,pp);
-    /*
-    for (int i=0;i<C1.size();i=i+p) {
-        balance(C1,i,i+p-1,53);
-    }
-    */
     double df = (double)clock();
 
-    cout << "TC? Finished. Raw performance? " << f_raw/t_raw << ". Wall clock time? " << (df-d0)/(double)CLOCKS_PER_SEC << ". For Tensor Core alone? " << (tf-t0)/(double)CLOCKS_PER_SEC << endl;
+    cout << "TC? Finished. Raw performance? " << f_raw/t_raw << ". Wall clock time? " << ((df-d0)/(double)CLOCKS_PER_SEC)/loop_ct << ". For Tensor Core alone? " << ((tf-t0)/(double)CLOCKS_PER_SEC)/loop_ct << endl;
 
     float t_CUDA;
     double h0 = (double)clock();
@@ -125,17 +120,17 @@ void test(int expmin,int expmax) {
     double hf = (double)clock();
     float f_CUDA,add_ops,mul_ops;
     if (p==2) {
-	mul_ops=23*n*n*n;
-	add_ops=20*n*n*(n-1);
+	mul_ops=23.0*(float)n*(float)n*(float)n;
+	add_ops=20.0*(float)n*(float)n*((float)n-1.0);
     } else if (p==4) { // rest are 23 and 20 as placeholders until table given
-	mul_ops=23*n*n*n;
-        add_ops=20*n*n*(n-1); 
+	mul_ops=23.0*(float)n*(float)n*(float)n;
+        add_ops=20.0*(float)n*(float)n*((float)n-1.0);
     } else if (p==8) {
-	mul_ops=23*n*n*n;
-        add_ops=20*n*n*(n-1);
+	mul_ops=23.0*(float)n*(float)n*(float)n;
+        add_ops=20.0*(float)n*(float)n*((float)n-1.0);
     } else if (p==16) {
-	mul_ops=23*n*n*n;
-        add_ops=20*n*n*(n-1);
+	mul_ops=23.0*(float)n*(float)n*(float)n;
+        add_ops=20.0*(float)n*(float)n*((float)n-1.0);
     }
     f_CUDA = mul_ops+add_ops;
 
