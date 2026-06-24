@@ -26,6 +26,17 @@ matmatTC:
 	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCcuda.cu
 	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCtest.cu
 	nvcc -ccbin=$(GPP) floatybits.o TCcuda.o TCtest.o -o mytest
+	./mytest
+
+nh:
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c floatybits.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c double_double_functions.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c quad_double_functions.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c octo_double_functions.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c hexa_double_functions.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCcuda.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCtest.cu
+	nvcc -ccbin=$(GPP) floatybits.o TCcuda.o TCtest.o -o mytest
 	nohup ./mytest &
 
 matmatTC2:

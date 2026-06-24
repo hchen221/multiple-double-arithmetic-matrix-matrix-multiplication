@@ -4,8 +4,8 @@
 #include <ctime>
 using namespace std;
 
-#define p 4
-#define n 4096
+#define p 2
+#define n 8192
 #define q 4
 #define pp q*p
 #define loop_ct 1 // 1 for correctness, 10000 for performance
@@ -93,45 +93,58 @@ void test(int expmin,int expmax) {
     gridDim.y = (N_GLOBAL + N*blockDim.y-1)/(N*blockDim.y);
     
     float t_raw;
+    double t0 = (double)clock();
     cudaEvent_t T0,Tf;           // to measure time spent by kernels 
     cudaEventCreate(&T0);
     cudaEventCreate(&Tf);
     cudaEventRecord(T0);
-    double t0 = (double)clock();
     for (int i=0;i<loop_ct;i++) {
         matmul<<<gridDim,blockDim>>>(A_d,B_d,C_d);
     }
-    double tf = (double)clock();
     cudaEventRecord(Tf);
     cudaEventSynchronize(Tf);
     cudaEventElapsedTime(&t_raw,T0,Tf);
+    double tf = (double)clock();
     float f_raw = (float)M_GLOBAL*(float)N_GLOBAL*(2.0*(float)K_GLOBAL-1.0);
 
     cudaMemcpy(C1q.data(),C_d,(float)M_GLOBAL*(float)N_GLOBAL*(float)sizeof(double),cudaMemcpyDeviceToHost);
-    vector<double> C1 = pllsqueeze_old(C1q,p,pp);
+    float t_squeeze;
+    vector<double> C1 = pllsqueeze_old(C1q,p,pp,t_squeeze);
     double df = (double)clock();
 
-    cout << "TC? Finished. Raw performance? " << f_raw/t_raw << ". Wall clock time? " << ((df-d0)/(double)CLOCKS_PER_SEC)/loop_ct << ". For Tensor Core alone? " << ((tf-t0)/(double)CLOCKS_PER_SEC)/loop_ct << endl;
+    float f_squeeze = (float)pp*(float)((int)(C1q.size()/pp));
+    if (p==2) {
+	f_squeeze *= 10;
+    } else if (p==4) { // 10 is a placeholder
+	f_squeeze *= 10;
+    } else if (p==8) {
+	f_squeeze *= 10;
+    } else if (p==16) {
+	f_squeeze *= 10;
+    }
+
+    cout << "TC? Finished. Raw performance? " << f_raw/t_raw << ". Wall clock time? " << ((df-d0)/(double)CLOCKS_PER_SEC) << ". For Tensor Core alone? " << ((tf-t0)/(double)CLOCKS_PER_SEC) << endl;
 
     float t_CUDA;
     double h0 = (double)clock();
     int nfrag = min(32,n);
-    vector<double> C2 = matmulTCnt(A,B,n,nfrag,p,t_CUDA);
+    vector<double> C2 = matmulTCnt(A,B,n,nfrag,p,loop_ct,t_CUDA);
     double hf = (double)clock();
     float f_CUDA,add_ops,mul_ops;
     if (p==2) {
 	mul_ops=23.0*(float)n*(float)n*(float)n;
 	add_ops=20.0*(float)n*(float)n*((float)n-1.0);
-    } else if (p==4) { // rest are 23 and 20 as placeholders until table given
-	mul_ops=23.0*(float)n*(float)n*(float)n;
-        add_ops=20.0*(float)n*(float)n*((float)n-1.0);
+    } else if (p==4) {
+	mul_ops=336.0*(float)n*(float)n*(float)n;
+        add_ops=89.0*(float)n*(float)n*((float)n-1.0);
     } else if (p==8) {
-	mul_ops=23.0*(float)n*(float)n*(float)n;
-        add_ops=20.0*(float)n*(float)n*((float)n-1.0);
-    } else if (p==16) {
+	mul_ops=1742.0*(float)n*(float)n*(float)n;
+        add_ops=269.0*(float)n*(float)n*((float)n-1.0);
+    } else if (p==16) { // 23 and 20 are placeholders
 	mul_ops=23.0*(float)n*(float)n*(float)n;
         add_ops=20.0*(float)n*(float)n*((float)n-1.0);
     }
+    // values from Table 1 in https://homepages.math.uic.edu/~jan/hilt2020multidoubles.pdf
     f_CUDA = mul_ops+add_ops;
 
     cout << "CUDA? Finished. Performance? " << f_CUDA/t_CUDA << ". Wall clock time? " << (hf-h0)/(double)CLOCKS_PER_SEC << endl;

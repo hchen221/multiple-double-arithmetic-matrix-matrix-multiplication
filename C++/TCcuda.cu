@@ -245,7 +245,7 @@ __global__ void hdmm(double *A,double *B,double *C,int n)
     C[r*n*16+c*16+15] = prd16;
 }
 
-vector<double> matmulTCnt(vector<double> A,vector<double> B, int n, int nfrag, int p, float &t_CUDA) {
+vector<double> matmulTCnt(vector<double> A,vector<double> B, int n, int nfrag, int p, int loop_ct, float &t_CUDA) {
     vector<double> C = zeros(n,n,p);
     
     double* A_d;
@@ -268,22 +268,30 @@ vector<double> matmulTCnt(vector<double> A,vector<double> B, int n, int nfrag, i
     cudaEventCreate(&t1);
     if (p==2) {
 	cudaEventRecord(t0);
-        ddmm<<<Gr,Bl>>>(A_d,B_d,C_d,n);
+        for (int l=0;l<loop_ct;l++) {
+	    ddmm<<<Gr,Bl>>>(A_d,B_d,C_d,n);
+	}
 	cudaEventRecord(t1);
 	cudaEventSynchronize(t1);
     } else if (p==4) {
 	cudaEventRecord(t0);
-	qdmm<<<Gr,Bl>>>(A_d,B_d,C_d,n);
+        for (int l=0;l<loop_ct;l++) {
+	    qdmm<<<Gr,Bl>>>(A_d,B_d,C_d,n);
+	}
 	cudaEventRecord(t1);
 	cudaEventSynchronize(t1);
     } else if (p==8) {
 	cudaEventRecord(t0);
-	odmm<<<Gr,Bl>>>(A_d,B_d,C_d,n);
+	for (int l=0;l<loop_ct;l++) {
+	    odmm<<<Gr,Bl>>>(A_d,B_d,C_d,n);
+	}
         cudaEventRecord(t1);
 	cudaEventSynchronize(t1);
     } else if (p==16) {
 	cudaEventRecord(t0);
-	hdmm<<<Gr,Bl>>>(A_d,B_d,C_d,n);
+	for (int l=0;l<loop_ct;l++) {
+	    hdmm<<<Gr,Bl>>>(A_d,B_d,C_d,n);
+	}
 	cudaEventRecord(t1);
 	cudaEventSynchronize(t1);
     }
@@ -897,7 +905,7 @@ __global__ void pllsqueeze_16_pp_old(double *x,double *y,int pp) {
    }
 }
 
-vector<double> pllsqueeze_old(vector<double> x,int p,int pp) {
+vector<double> pllsqueeze_old(vector<double> x,int p,int pp,float &t_CUDA) {
     int n = x.size()/pp;
     vector<double> y = zeros(n,1,p);
 
@@ -920,15 +928,31 @@ vector<double> pllsqueeze_old(vector<double> x,int p,int pp) {
         B.x = 64;
         B.y = 1;
     }
+    cudaEvent_t t0,t1;           // to measure time spent by kernels
+    cudaEventCreate(&t0);
+    cudaEventCreate(&t1);
     if (p==2) {
+	cudaEventRecord(t0);
 	pllsqueeze_2_pp_old<<<G,B>>>(x_d,y_d,pp);
+	cudaEventRecord(t1);
+	cudaEventSynchronize(t1);
     } else if (p==4) {
+	cudaEventRecord(t0);
 	pllsqueeze_4_pp_old<<<G,B>>>(x_d,y_d,pp);
+	cudaEventRecord(t1);
+	cudaEventSynchronize(t1);
     } else if (p==8) {
+	cudaEventRecord(t0);
         pllsqueeze_8_pp_old<<<G,B>>>(x_d,y_d,pp);
+	cudaEventRecord(t1);
+	cudaEventSynchronize(t1);
     } else if (p==16) {
+	cudaEventRecord(t0);
         pllsqueeze_16_pp_old<<<G,B>>>(x_d,y_d,pp);
+	cudaEventRecord(t1);
+	cudaEventSynchronize(t1);
     }
+    cudaEventElapsedTime(&t_CUDA,t0,t1);
     cudaMemcpy(y.data(),y_d,(float)n*(float)p*(float)sizeof(double),cudaMemcpyDeviceToHost);
     return y;
 }
