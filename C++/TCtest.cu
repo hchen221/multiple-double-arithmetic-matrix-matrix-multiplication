@@ -4,8 +4,8 @@
 #include <ctime>
 using namespace std;
 
-#define p 2
-#define n 8192
+#define p 4
+#define n 4096
 #define q 4
 #define pp q*p
 #define loop_ct 1 // 1 for correctness, 10000 for performance
@@ -74,12 +74,12 @@ void test(int expmin,int expmax) {
     double* B_d;
     double* C_d;
 
-    cudaMalloc((void**)&A_d,(float)M_GLOBAL*(float)K_GLOBAL*(float)sizeof(double));
-    cudaMemcpy(A_d,AqD.data(),(float)M_GLOBAL*(float)K_GLOBAL*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&B_d,(float)K_GLOBAL*(float)N_GLOBAL*(float)sizeof(double));
-    cudaMemcpy(B_d,BqD.data(),(float)K_GLOBAL*(float)N_GLOBAL*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&C_d,(float)M_GLOBAL*(float)N_GLOBAL*(float)sizeof(double));
-    cudaMemcpy(C_d,C1q.data(),(float)M_GLOBAL*(float)N_GLOBAL*(float)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&A_d,(long long int)M_GLOBAL*(long long int)K_GLOBAL*(long long int)sizeof(double));
+    cudaMemcpy(A_d,AqD.data(),(long long int)M_GLOBAL*(long long int)K_GLOBAL*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&B_d,(long long int)K_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double));
+    cudaMemcpy(B_d,BqD.data(),(long long int)K_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&C_d,(long long int)M_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double));
+    cudaMemcpy(C_d,C1q.data(),(long long int)M_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double),cudaMemcpyHostToDevice);
 
     dim3 gridDim;
     dim3 blockDim;
@@ -105,14 +105,16 @@ void test(int expmin,int expmax) {
     cudaEventSynchronize(Tf);
     cudaEventElapsedTime(&t_raw,T0,Tf);
     double tf = (double)clock();
-    float f_raw = (float)M_GLOBAL*(float)N_GLOBAL*(2.0*(float)K_GLOBAL-1.0);
+    long long int f_raw = (long long int)M_GLOBAL*(long long int)N_GLOBAL*(2*(long long int)K_GLOBAL-1);
 
-    cudaMemcpy(C1q.data(),C_d,(float)M_GLOBAL*(float)N_GLOBAL*(float)sizeof(double),cudaMemcpyDeviceToHost);
+    cudaMemcpy(C1q.data(),C_d,(long long int)M_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
+    cout << "Core? Tensored." << endl;
+
     float t_squeeze;
     vector<double> C1 = pllsqueeze_old(C1q,p,pp,t_squeeze);
     double df = (double)clock();
 
-    float f_squeeze = (float)pp*(float)((int)(C1q.size()/pp));
+    long long int f_squeeze = (long long int)pp*(long long int)((int)(C1q.size()/pp));
     if (p==2) {
 	f_squeeze *= 10;
     } else if (p==4) { // 10 is a placeholder
@@ -132,17 +134,17 @@ void test(int expmin,int expmax) {
     double hf = (double)clock();
     float f_CUDA,add_ops,mul_ops;
     if (p==2) {
-	mul_ops=23.0*(float)n*(float)n*(float)n;
-	add_ops=20.0*(float)n*(float)n*((float)n-1.0);
+	mul_ops=23*(long long int)n*(long long int)n*(long long int)n;
+	add_ops=20*(long long int)n*(long long int)n*((long long int)n-1);
     } else if (p==4) {
-	mul_ops=336.0*(float)n*(float)n*(float)n;
-        add_ops=89.0*(float)n*(float)n*((float)n-1.0);
+	mul_ops=336*(long long int)n*(long long int)n*(long long int)n;
+        add_ops=89*(long long int)n*(long long int)n*((long long int)n-1);
     } else if (p==8) {
-	mul_ops=1742.0*(float)n*(float)n*(float)n;
-        add_ops=269.0*(float)n*(float)n*((float)n-1.0);
+	mul_ops=1742*(long long int)n*(long long int)n*(long long int)n;
+        add_ops=269*(long long int)n*(long long int)n*((long long int)n-1);
     } else if (p==16) { // 23 and 20 are placeholders
-	mul_ops=23.0*(float)n*(float)n*(float)n;
-        add_ops=20.0*(float)n*(float)n*((float)n-1.0);
+	mul_ops=23*(long long int)n*(long long int)n*(long long int)n;
+        add_ops=20*(long long int)n*(long long int)n*((long long int)n-1);
     }
     // values from Table 1 in https://homepages.math.uic.edu/~jan/hilt2020multidoubles.pdf
     f_CUDA = mul_ops+add_ops;

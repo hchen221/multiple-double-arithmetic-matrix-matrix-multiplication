@@ -252,12 +252,12 @@ vector<double> matmulTCnt(vector<double> A,vector<double> B, int n, int nfrag, i
     double* B_d;
     double* C_d;
 
-    cudaMalloc((void**)&A_d,(float)n*(float)n*(float)p*(float)sizeof(double));
-    cudaMemcpy(A_d,A.data(),(float)n*(float)n*(float)p*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&B_d,(float)n*(float)n*(float)p*(float)sizeof(double));
-    cudaMemcpy(B_d,B.data(),(float)n*(float)n*(float)p*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&C_d,(float)n*(float)n*(float)p*(float)sizeof(double));
-    cudaMemcpy(C_d,C.data(),(float)n*(float)n*(float)p*(float)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&A_d,(long long int)n*(long long int)n*(long long int)p*(long long int)sizeof(double));
+    cudaMemcpy(A_d,A.data(),(long long int)n*(long long int)n*(long long int)p*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&B_d,(long long int)n*(long long int)n*(long long int)p*(long long int)sizeof(double));
+    cudaMemcpy(B_d,B.data(),(long long int)n*(long long int)n*(long long int)p*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&C_d,(long long int)n*(long long int)n*(long long int)p*(long long int)sizeof(double));
+    cudaMemcpy(C_d,C.data(),(long long int)n*(long long int)n*(long long int)p*(long long int)sizeof(double),cudaMemcpyHostToDevice);
 
     int nlen = n/nfrag;
     dim3 Gr(nlen,nlen);
@@ -296,7 +296,7 @@ vector<double> matmulTCnt(vector<double> A,vector<double> B, int n, int nfrag, i
 	cudaEventSynchronize(t1);
     }
     cudaEventElapsedTime(&t_CUDA,t0,t1);
-    cudaMemcpy(C.data(),C_d,(float)n*(float)n*(float)p*(float)sizeof(double),cudaMemcpyDeviceToHost);
+    cudaMemcpy(C.data(),C_d,(long long int)n*(long long int)n*(long long int)p*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
 
     return C;
 }
@@ -431,26 +431,26 @@ vector<double> pllsqueeze_2_8(vector<double> x) {
     double* x8;
     double* y1;
     double* y2;
-    cudaMalloc((void**)&x1,(float)n*(float)sizeof(double));
-    cudaMemcpy(x1,X1.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x2,(float)n*(float)sizeof(double));
-    cudaMemcpy(x2,X2.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x3,(float)n*(float)sizeof(double));
-    cudaMemcpy(x3,X3.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x4,(float)n*(float)sizeof(double));
-    cudaMemcpy(x4,X4.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x5,(float)n*(float)sizeof(double));
-    cudaMemcpy(x5,X5.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x6,(float)n*(float)sizeof(double));
-    cudaMemcpy(x6,X6.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x7,(float)n*(float)sizeof(double));
-    cudaMemcpy(x7,X7.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x8,(float)n*(float)sizeof(double));
-    cudaMemcpy(x8,X8.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&y1,(float)n*(float)sizeof(double));
-    cudaMemcpy(y1,Y1.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&y2,(float)n*(float)sizeof(double));
-    cudaMemcpy(y2,Y2.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x1,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x1,X1.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x2,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x2,X2.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x3,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x3,X3.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x4,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x4,X4.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x5,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x5,X5.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x6,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x6,X6.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x7,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x7,X7.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x8,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x8,X8.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&y1,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(y1,Y1.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&y2,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(y2,Y2.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
     dim3 G;
     dim3 B;
     if (n <64) {
@@ -465,8 +465,8 @@ vector<double> pllsqueeze_2_8(vector<double> x) {
         B.y = 1;
     }
     pllsqueeze_kernel_2_8<<<G,B>>>(x1,x2,x3,x4,x5,x6,x7,x8,y1,y2);
-    cudaMemcpy(Y1.data(),y1,(float)n*(float)sizeof(double),cudaMemcpyDeviceToHost);
-    cudaMemcpy(Y2.data(),y2,(float)n*(float)sizeof(double),cudaMemcpyDeviceToHost);
+    cudaMemcpy(Y1.data(),y1,(long long int)n*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
+    cudaMemcpy(Y2.data(),y2,(long long int)n*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
     vector<double> y;
     for (int i=0;i<n;i++) {
         y.push_back(Y1[i]);
@@ -552,34 +552,34 @@ vector<double> pllsqueeze_2_12(vector<double> x) {
     double* x12;
     double* y1;
     double* y2;
-    cudaMalloc((void**)&x1,(float)n*(float)sizeof(double));
-    cudaMemcpy(x1,X1.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x2,(float)n*(float)sizeof(double));
-    cudaMemcpy(x2,X2.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x3,(float)n*(float)sizeof(double));
-    cudaMemcpy(x3,X3.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x4,(float)n*(float)sizeof(double));
-    cudaMemcpy(x4,X4.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x5,(float)n*(float)sizeof(double));
-    cudaMemcpy(x5,X5.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x6,(float)n*(float)sizeof(double));
-    cudaMemcpy(x6,X6.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x7,(float)n*(float)sizeof(double));
-    cudaMemcpy(x7,X7.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x8,(float)n*(float)sizeof(double));
-    cudaMemcpy(x8,X8.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x9,(float)n*(float)sizeof(double));
-    cudaMemcpy(x9,X9.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x10,(float)n*(float)sizeof(double));
-    cudaMemcpy(x10,X10.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x11,(float)n*(float)sizeof(double));
-    cudaMemcpy(x11,X11.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x12,(float)n*(float)sizeof(double));
-    cudaMemcpy(x12,X12.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&y1,(float)n*(float)sizeof(double));
-    cudaMemcpy(y1,Y1.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&y2,(float)n*(float)sizeof(double));
-    cudaMemcpy(y2,Y2.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x1,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x1,X1.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x2,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x2,X2.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x3,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x3,X3.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x4,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x4,X4.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x5,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x5,X5.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x6,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x6,X6.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x7,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x7,X7.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x8,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x8,X8.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x9,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x9,X9.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x10,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x10,X10.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x11,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x11,X11.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x12,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x12,X12.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&y1,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(y1,Y1.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&y2,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(y2,Y2.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
 
     dim3 G;
     dim3 B;
@@ -595,8 +595,8 @@ vector<double> pllsqueeze_2_12(vector<double> x) {
         B.y = 1;
     }
     pllsqueeze_kernel_2_12<<<G,B>>>(x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,y1,y2);
-    cudaMemcpy(Y1.data(),y1,(float)n*(float)sizeof(double),cudaMemcpyDeviceToHost);
-    cudaMemcpy(Y2.data(),y2,(float)n*(float)sizeof(double),cudaMemcpyDeviceToHost);
+    cudaMemcpy(Y1.data(),y1,(long long int)n*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
+    cudaMemcpy(Y2.data(),y2,(long long int)n*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
     vector<double> y;
     for (int i=0;i<n;i++) {
 	y.push_back(Y1[i]);
@@ -701,42 +701,42 @@ vector<double> pllsqueeze_2_16(vector<double> x) {
     double* x16;
     double* y1;
     double* y2;
-    cudaMalloc((void**)&x1,(float)n*(float)sizeof(double));
-    cudaMemcpy(x1,X1.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x2,(float)n*(float)sizeof(double));
-    cudaMemcpy(x2,X2.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x3,(float)n*(float)sizeof(double));
-    cudaMemcpy(x3,X3.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x4,(float)n*(float)sizeof(double));
-    cudaMemcpy(x4,X4.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x5,(float)n*(float)sizeof(double));
-    cudaMemcpy(x5,X5.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x6,(float)n*(float)sizeof(double));
-    cudaMemcpy(x6,X6.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x7,(float)n*(float)sizeof(double));
-    cudaMemcpy(x7,X7.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x8,(float)n*(float)sizeof(double));
-    cudaMemcpy(x8,X8.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x9,(float)n*(float)sizeof(double));
-    cudaMemcpy(x9,X9.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x10,(float)n*(float)sizeof(double));
-    cudaMemcpy(x10,X10.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x11,(float)n*(float)sizeof(double));
-    cudaMemcpy(x11,X11.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x12,(float)n*(float)sizeof(double));
-    cudaMemcpy(x12,X12.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x13,(float)n*(float)sizeof(double));
-    cudaMemcpy(x13,X13.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x14,(float)n*(float)sizeof(double));
-    cudaMemcpy(x14,X14.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x15,(float)n*(float)sizeof(double));
-    cudaMemcpy(x15,X15.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&x16,(float)n*(float)sizeof(double));
-    cudaMemcpy(x16,X16.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&y1,(float)n*(float)sizeof(double));
-    cudaMemcpy(y1,Y1.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&y2,(float)n*(float)sizeof(double));
-    cudaMemcpy(y2,Y2.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x1,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x1,X1.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x2,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x2,X2.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x3,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x3,X3.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x4,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x4,X4.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x5,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x5,X5.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x6,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x6,X6.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x7,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x7,X7.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x8,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x8,X8.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x9,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x9,X9.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x10,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x10,X10.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x11,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x11,X11.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x12,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x12,X12.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x13,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x13,X13.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x14,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x14,X14.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x15,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x15,X15.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x16,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(x16,X16.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&y1,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(y1,Y1.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&y2,(long long int)n*(long long int)sizeof(double));
+    cudaMemcpy(y2,Y2.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);
     dim3 G;
     dim3 B;
     if (n <64) {
@@ -751,8 +751,8 @@ vector<double> pllsqueeze_2_16(vector<double> x) {
         B.y = 1;
     }
     pllsqueeze_kernel_2_16<<<G,B>>>(x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15,x16,y1,y2);
-    cudaMemcpy(Y1.data(),y1,(float)n*(float)sizeof(double),cudaMemcpyDeviceToHost);
-    cudaMemcpy(Y2.data(),y2,(float)n*(float)sizeof(double),cudaMemcpyDeviceToHost);
+    cudaMemcpy(Y1.data(),y1,(long long int)n*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
+    cudaMemcpy(Y2.data(),y2,(long long int)n*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
     vector<double> y;
     for (int i=0;i<n;i++) {
         y.push_back(Y1[i]);
@@ -911,10 +911,10 @@ vector<double> pllsqueeze_old(vector<double> x,int p,int pp,float &t_CUDA) {
 
     double* x_d;
     double* y_d;
-    cudaMalloc((void**)&x_d,(float)n*(float)pp*(float)sizeof(double));
-    cudaMemcpy(x_d,x.data(),(float)n*(float)pp*(float)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&y_d,(float)n*(float)p*(float)sizeof(double));
-    cudaMemcpy(y_d,y.data(),(float)n*(float)p*(float)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&x_d,(long long int)n*(long long int)pp*(long long int)sizeof(double));
+    cudaMemcpy(x_d,x.data(),(long long int)n*(long long int)pp*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&y_d,(long long int)n*(long long int)p*(long long int)sizeof(double));
+    cudaMemcpy(y_d,y.data(),(long long int)n*(long long int)p*(long long int)sizeof(double),cudaMemcpyHostToDevice);
     dim3 G;
     dim3 B;
     if (n <64) {
@@ -953,7 +953,7 @@ vector<double> pllsqueeze_old(vector<double> x,int p,int pp,float &t_CUDA) {
 	cudaEventSynchronize(t1);
     }
     cudaEventElapsedTime(&t_CUDA,t0,t1);
-    cudaMemcpy(y.data(),y_d,(float)n*(float)p*(float)sizeof(double),cudaMemcpyDeviceToHost);
+    cudaMemcpy(y.data(),y_d,(long long int)n*(long long int)p*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
     return y;
 }
 
@@ -985,15 +985,15 @@ def pllsqueeze(p,pp):
         code += f"    vector<double> Y{i+1} = zeros(n,1,1);\n"
     code += "\n".join([f"double *x{j+1};" for j in range(pp)]+[f"double* y{i+1};" for i in range(p)])+";\n"
     for j in range(pp):
-        code += f"    cudaMalloc((void**)&x{j+1},(float)n*(float)sizeof(double));\n"
-        code += f"    cudaMemcpy(x{j+1},X{j+1}.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);\n"
+        code += f"    cudaMalloc((void**)&x{j+1},(long long int)n*(long long int)sizeof(double));\n"
+        code += f"    cudaMemcpy(x{j+1},X{j+1}.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);\n"
     for i in range(p):
-        code += f"    cudaMalloc((void**)&y{i+1},(float)n*(float)sizeof(double));\n"
-        code += f"    cudaMemcpy(y{i+1},Y{i+1}.data(),(float)n*(float)sizeof(double),cudaMemcpyHostToDevice);\n"
+        code += f"    cudaMalloc((void**)&y{i+1},(long long int)n*(long long int)sizeof(double));\n"
+        code += f"    cudaMemcpy(y{i+1},Y{i+1}.data(),(long long int)n*(long long int)sizeof(double),cudaMemcpyHostToDevice);\n"
     code += "    dim3 G;\n    dim3 B;\n    if (n <64) {\n        G.x = 1;\n        G.y = 1;\n        B.x = n;\n        B.y = 1;\n    } else {\n        G.x = n/64; // assume 64|n\n        G.y = 1;\n        B.x = 64;\n        B.y = 1;\n    }"
     code += f"    pllsqueeze_{p}_{pp}<<<G,B>>>("+",".join([f"x{j+1}" for j in range(pp)]+[f"y{i+1}" for i in range(p)])+");\n"
     for i in range(p):
-        code += f"    cudaMemcpy(Y{i+1}.data(),y{i+1},(float)n*(float)sizeof(double),cudaMemcpyDeviceToHost);\n"
+        code += f"    cudaMemcpy(Y{i+1}.data(),y{i+1},(long long int)n*(long long int)sizeof(double),cudaMemcpyDeviceToHost);\n"
     code += "    vector<double> y;\n    for (int i=0;i<n;i++) {\n"
     for j in range(p):
         code += f"        y.push_back(Y{j+1}[i]);\n"
