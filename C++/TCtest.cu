@@ -4,8 +4,8 @@
 #include <ctime>
 using namespace std;
 
-#define p 4
-#define n 4096
+#define p 8
+#define n 64
 #define q 4
 #define pp q*p
 #define loop_ct 1 // 1 for correctness, 10000 for performance
@@ -93,18 +93,18 @@ void test(int expmin,int expmax) {
     gridDim.y = (N_GLOBAL + N*blockDim.y-1)/(N*blockDim.y);
     
     float t_raw;
-    double t0 = (double)clock();
     cudaEvent_t T0,Tf;           // to measure time spent by kernels 
     cudaEventCreate(&T0);
     cudaEventCreate(&Tf);
     cudaEventRecord(T0);
+    double t0 = (double)clock();
     for (int i=0;i<loop_ct;i++) {
         matmul<<<gridDim,blockDim>>>(A_d,B_d,C_d);
     }
+    double tf = (double)clock();
     cudaEventRecord(Tf);
     cudaEventSynchronize(Tf);
     cudaEventElapsedTime(&t_raw,T0,Tf);
-    double tf = (double)clock();
     long long int f_raw = (long long int)M_GLOBAL*(long long int)N_GLOBAL*(2*(long long int)K_GLOBAL-1);
 
     cudaMemcpy(C1q.data(),C_d,(long long int)M_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
