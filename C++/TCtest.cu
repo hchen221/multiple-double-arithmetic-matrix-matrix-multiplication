@@ -125,7 +125,7 @@ void test(int expmin,int expmax) {
 	f_squeeze *= 10;
     }
 
-    cout << "TC? Finished. Raw performance? " << f_raw/t_raw << ". Wall clock time? " << ((df-d0)/(double)CLOCKS_PER_SEC) << ". For Tensor Core alone? " << ((tf-t0)/(double)CLOCKS_PER_SEC) << endl;
+    cout << "TC? Finished. Raw performance? " << f_raw/t_raw << ". CPU time? " << ((df-d0)/(double)CLOCKS_PER_SEC) << ". For Tensor Core alone? " << ((tf-t0)/(double)CLOCKS_PER_SEC) << endl;
 
     float t_CUDA;
     double h0 = (double)clock();
@@ -149,7 +149,7 @@ void test(int expmin,int expmax) {
     // values from Table 1 in https://homepages.math.uic.edu/~jan/hilt2020multidoubles.pdf
     f_CUDA = mul_ops+add_ops;
 
-    cout << "CUDA? Finished. Performance? " << f_CUDA/t_CUDA << ". Wall clock time? " << (hf-h0)/(double)CLOCKS_PER_SEC << endl;
+    cout << "CUDA? Finished. Performance? " << f_CUDA/t_CUDA << ". CPU time? " << (hf-h0)/(double)CLOCKS_PER_SEC << endl;
     
     cout << "TC C[1,1]? (";
     for (int i=0;i<p;i++) {
