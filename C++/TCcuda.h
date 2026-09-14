@@ -35,21 +35,17 @@ vector<double> part(vector<double> x,int p,int i);
 /*bigA(A,n,p) takes an nxn matrix of p-double entries A and returns [A_1,...,A_p] stacked row wise, formatted row major*/
 vector<double> bigA(vector<double> A,int n,int p);
 
-/*bigB(B,n,p) takes an nxn matrix of p-double entries B and returns the following
+/*bigB_dvc(B,BB,n,p) takes an nxn matrix of p-double entries B and fills BB as the following
   [B_1,B_2,...,B_p]
   [0  ,B_1,...,B_{p-1}]
   [.  ,.  ,.  ..  ]
   [.  ,.  ,.  ,B_1]
-  formatted col major*/
-vector<double> bigB(vector<double> B,int n,int p);
-
-/*bigB2(B,n,p) takes an nxn matrix of p-double entries B and returns an np x np matrix where each pxp block corresponds to an entry of B in the following form
-  [b_1,b_2,...,b_p]
-  [0  ,b_1,...,b_{p-1}]
-  [.  ,.  ,.  ..  ]
-  [.  ,.  ,.  ,b_1]
- formatter col major 
+  formatted col major
+bigB_dvc_sharednt does it without shared memory
+bigB2 is a host version  
 */
+__global__ void bigB_dvc(double* B, double* BB, int n, int p);
+__global__ void bigB_dvc_sharednt(double* B, double* BB, int n, int p);
 vector<double> bigB2(vector<double> B,int n,int p);
 
 /*renormbigA takes a matrix of form bigA(A,n,p) and runs on nxn threads in a 1x1 block to renormalize into non overlapping p-doubles component wise*/
@@ -57,6 +53,9 @@ __global__ void renormbigA(double* A,int n,int p);
 
 /*renormA takes an nxn matrix A of p-doubles and runs on nxn threads in a 1x1 block to renormalize into non overlapping p-doubles component wise*/
 __global__ void renormA(double* A,int n,int p);
+
+/*inv_upper_triangular(U,X,B,n,m) takes an upper triangular matrix U where U is nxn and solves UX=B for X where X,B are nxm*/
+__global__ void inv_upper_triangular(double* U,double* X,double* B, int n, int m);
 
 /*matmulTCnt(A,B,n,p) takes nxn matrices A,B of p-doubles and computes the product C, done with regular CUDA cores, with helper functions ddmm,qdmm,odmm,hdmm depending on p, executed on nlen x nlen blocks with block size nfrag x nfrag where nfrag*nlen=n. The kernels are adapted from ddmm_kernels.cu in PHCpack*/
 __global__ void ddmm(double *A,double *B,double *C,int n);

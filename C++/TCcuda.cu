@@ -51,31 +51,50 @@ vector<double> bigA(vector<double> A,int n,int p) {
     }
     return AA;
 }
-/*bigB(B,n,p) takes an nxn matrix of p-double entries B and returns the following
+
+__global__ void bigB_dvc(double* B,double* BB,int n,int p) {
+    int r = blockDim.x*blockIdx.x+threadIdx.x;
+    int c = blockDim.y*blockIdx.y+threadIdx.y;
+    int r_loc = threadIdx.x;
+    int c_loc = threadIdx.y;
+    int n_frag = blockDim.x;
+    extern __shared__ double b[];
+    for (int i=0;i<p;i++) {
+	b[r_loc*n_frag*p+c_loc*p+i] = B[r*n*p+c*p+i];
+        __syncthreads();
+    }
+    for (int i=0;i<p;i++) {
+	for (int j=0;j<p;j++) {
+	    if (j<=i) {
+	        BB[c*n*n*p+i*n*p+r*n+j] = b[r_loc*n_frag*p+c_loc*p+(i-j)];
+	    }
+	    __syncthreads();
+	}
+    }
+}
+
+__global__ void bigB_dvc_sharednt(double* B,double* BB,int n,int p) {
+    int r = blockDim.x*blockIdx.x+threadIdx.x;
+    int c = blockDim.y*blockIdx.y+threadIdx.y;
+    int r_loc = threadIdx.x;
+    int c_loc = threadIdx.y;
+    int n_frag = blockDim.x;
+    for (int i=0;i<p;i++) {
+        for (int j=0;j<p;j++) {
+            if (j<=i) {
+                BB[i*n*n*p+c*n*p+j*n+r] = B[r*n*p+c*p+(i-j)];
+            }
+            __syncthreads();
+        }
+    }
+}
+/*bigB_dvc(B,n,p) takes an nxn matrix of p-double entries B and returns the following
   [B_1,B_2,...,B_p]
   [0  ,B_1,...,B_{p-1}]
   [.  ,.  ,.  ..  ]
   [.  ,.  ,.  ,B_1]
   formatted col major
  */
-vector<double> bigB(vector<double> B,int n,int p) {
-    vector<double> BB;
-    for (int i=0;i<p;i++) {
-    for (int c=0;c<n;c++) {
-    for (int j=0;j<p;j++) {
-    for (int r=0;r<n;r++) {
-        if (j<=i) {
-            BB.push_back(B[r*n*p+c*p+(i-j)]);
-        } else {
-            BB.push_back(0);
-        }
-    }
-    }
-    }
-    }
-    return BB;
-}
-
 vector<double> bigB2(vector<double> B,int n, int p) {
     vector<double> BB;
     for (int c=0;c<n;c++) {
@@ -114,6 +133,39 @@ __global__ void renormA(double* A,int n,int p) {
         A[i*n*p+j*p+k] = newhi;
         A[i*n*p+j*p+(k+1)] = newlo;
     }
+}
+
+__global__ void inv_upper_triangular(double* U,double* X,double* B, int n, int m) {
+    int j = blockIdx.y*blockDim.y+threadIdx.y;
+    for (int i=n-1;i<=0;i--) {
+	X[i*m+j] = B[i*m+j];
+	for (int k=n-1;k<0;k--) {
+       	    X[i*m+j] -= U[i*n+k]*X[k*m+j];
+	    __syncthreads();
+	}
+	X[i*m+j] /= U[i*n+i];
+	__syncthreads();
+    }
+}
+// Compute diagonal block inverse in parallel first then use it as part of a bigger back substitution. splitting extends number of columns. Look at leastsquares.pdf
+
+__global__ void invert_diagonals(double* U,double* Unt, int n) {
+    int I = blockIdx.x;
+    for (int i=(I+1)*blockDim.x-1;i<=I*blockDim.x;i--) {
+	for (int j=(I+1)*blockDim.x-1;j<I*blockDim.x;j--) {
+	    Unt[i*n+j] = static_cast<double>(i==j);
+	    for (int k=(I+1)*blockDim.x-1;k<I*blockDim.x;k--) {
+		Unt[i*n+j] -= U[i*n+k]*Unt[k*n+j];
+		__syncthreads();
+	    }
+	    Unt[i*n+j] /= U[i*n+i];
+	}
+	__syncthreads();
+    }
+}
+
+__global__ void back_subs(double* U, double* X, double* B, int blockSize, int n) {
+    ;
 }
 
 __global__ void ddmm(double *A,double *B,double *C,int n)

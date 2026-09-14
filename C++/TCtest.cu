@@ -4,8 +4,8 @@
 #include <ctime>
 using namespace std;
 
-#define p 8
-#define n 64
+#define p 2
+#define n 256
 #define q 4
 #define pp q*p
 #define loop_ct 1 // 1 for correctness, 10000 for performance
@@ -60,8 +60,6 @@ void test(int expmin,int expmax) {
         Aq = split8pd(A,p);
         Bq = split8pd(B,p);
     }
-    vector<double> AqD = Aq;
-    vector<double> BqD = bigB2(Bq,n,pp);
     cout << "A,B in R^{" << n << "x" << n << "}, entries of "<< p << "-doubles\n\n";
     
     vector<double> C1q = zeros(n,n,pp);
@@ -72,12 +70,26 @@ void test(int expmin,int expmax) {
 
     double* A_d;
     double* B_d;
+    double* BB_d;
     double* C_d;
 
     cudaMalloc((void**)&A_d,(long long int)M_GLOBAL*(long long int)K_GLOBAL*(long long int)sizeof(double));
-    cudaMemcpy(A_d,AqD.data(),(long long int)M_GLOBAL*(long long int)K_GLOBAL*(long long int)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&B_d,(long long int)K_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double));
-    cudaMemcpy(B_d,BqD.data(),(long long int)K_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMemcpy(A_d,Aq.data(),(long long int)M_GLOBAL*(long long int)K_GLOBAL*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&B_d,(long long int)M_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double));
+    cudaMemcpy(B_d,Bq.data(),(long long int)M_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&BB_d,(long long int)K_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double));
+    
+    dim3 gridB;
+    int nB = n/64;
+    gridB.x = nB;
+    gridB.y = nB;
+    dim3 blockB;
+    blockB.x = 64;
+    blockB.y = 64;
+    bigB_dvc_sharednt<<<gridB,blockB>>>(B_d,BB_d,n,pp);
+    
+    //vector<double> BB_h = bigB2(Bq,n,pp);
+    //cudaMemcpy(BB_d,BB_h.data(),(long long int)K_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double),cudaMemcpyHostToDevice); 
     cudaMalloc((void**)&C_d,(long long int)M_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double));
     cudaMemcpy(C_d,C1q.data(),(long long int)M_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double),cudaMemcpyHostToDevice);
 
@@ -99,7 +111,7 @@ void test(int expmin,int expmax) {
     cudaEventRecord(T0);
     double t0 = (double)clock();
     for (int i=0;i<loop_ct;i++) {
-        matmul<<<gridDim,blockDim>>>(A_d,B_d,C_d);
+        matmul<<<gridDim,blockDim>>>(A_d,BB_d,C_d);
     }
     double tf = (double)clock();
     cudaEventRecord(Tf);
@@ -206,4 +218,3 @@ int main() {
     
     return 0;
 }
-
