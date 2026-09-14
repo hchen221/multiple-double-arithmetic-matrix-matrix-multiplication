@@ -66,7 +66,7 @@ __global__ void bigB_dvc(double* B,double* BB,int n,int p) {
     for (int i=0;i<p;i++) {
 	for (int j=0;j<p;j++) {
 	    if (j<=i) {
-	        BB[c*n*n*p+i*n*p+r*n+j] = b[r_loc*n_frag*p+c_loc*p+(i-j)];
+	        BB[i*n*n*p+c*n*p+j*n+r] = b[r_loc*n_frag*p+c_loc*p+(i-j)];
 	    }
 	    __syncthreads();
 	}
@@ -76,9 +76,6 @@ __global__ void bigB_dvc(double* B,double* BB,int n,int p) {
 __global__ void bigB_dvc_sharednt(double* B,double* BB,int n,int p) {
     int r = blockDim.x*blockIdx.x+threadIdx.x;
     int c = blockDim.y*blockIdx.y+threadIdx.y;
-    int r_loc = threadIdx.x;
-    int c_loc = threadIdx.y;
-    int n_frag = blockDim.x;
     for (int i=0;i<p;i++) {
         for (int j=0;j<p;j++) {
             if (j<=i) {
