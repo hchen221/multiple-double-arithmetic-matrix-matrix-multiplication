@@ -66,7 +66,9 @@ __global__ void bigB_dvc(double* B,double* BB,int n,int p) {
     for (int i=0;i<p;i++) {
 	for (int j=0;j<p;j++) {
 	    if (j<=i) {
-	        BB[i*n*n*p+c*n*p+j*n+r] = b[r_loc*n_frag*p+c_loc*p+(i-j)];
+	        BB[c*n*p*p+i*n*p+r*p+j] = b[r_loc*n_frag*p+c_loc*p+(i-j)];
+	    } else {
+		BB[c*n*p*p+i*n*p+r*p+j] = 0;
 	    }
 	    __syncthreads();
 	}
@@ -76,11 +78,14 @@ __global__ void bigB_dvc(double* B,double* BB,int n,int p) {
 __global__ void bigB_dvc_sharednt(double* B,double* BB,int n,int p) {
     int r = blockDim.x*blockIdx.x+threadIdx.x;
     int c = blockDim.y*blockIdx.y+threadIdx.y;
+    printf("B[%i,%i]_0=%f\n",r,c,B[r*n*p+c*p]);
     for (int i=0;i<p;i++) {
         for (int j=0;j<p;j++) {
             if (j<=i) {
-                BB[i*n*n*p+c*n*p+j*n+r] = B[r*n*p+c*p+(i-j)];
-            }
+                BB[c*n*p*p+i*n*p+r*p+j] = B[r*n*p+c*p+(i-j)];
+            } else {
+		BB[c*n*p*p+i*n*p+r*p+j] = 0;
+	    }
             __syncthreads();
         }
     }

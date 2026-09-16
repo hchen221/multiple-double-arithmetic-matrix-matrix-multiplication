@@ -86,7 +86,7 @@ void test(int expmin,int expmax) {
     dim3 blockB;
     blockB.x = 64;
     blockB.y = 64;
-    bigB_dvc_sharednt<<<gridB,blockB>>>(B_d,BB_d,n,pp);
+    bigB_dvc<<<gridB,blockB>>>(B_d,BB_d,n,pp);
     
     //vector<double> BB_h = bigB2(Bq,n,pp);
     //cudaMemcpy(BB_d,BB_h.data(),(long long int)K_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double),cudaMemcpyHostToDevice); 
@@ -191,30 +191,56 @@ void test(int expmin,int expmax) {
 }
 
 int main() {
+    
     int seed = time(NULL);
     srand(seed);
     test(0,0);
+    
     /*
-    vector<double> A = mat(2,2,0,0);
-    vector<double> Aq;
-    if (pp==12) { // mix only works if p=2
-        Aq = mixsplit2(A);
-    } else if (pp==4*p) {
-        Aq = split4pd(A,p);
-    } else if (pp==8*p) {
-        Aq = split8pd(A,p);
+    double* B;
+    double* BB;
+    int nt = 2;
+    int pt = 4;
+    vector<double> B_src = mat(nt,pt,0,0);
+    cudaMalloc((void**)&B,(long long int)nt*(long long int)nt*(long long int)pt*(long long int)sizeof(double));
+    cudaMemcpy(B,B_src.data(),(long long int)nt*(long long int)nt*(long long int)pt*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&BB,(long long int)nt*(long long int)nt*(long long int)pt*(long long int)pt*(long long int)sizeof(double));
+    for (int i=0;i<pt;i++) {
+	cout << B+i << " ";
     }
-    int exp0,exp1;
-    for (int i=0;i<pp;i++) {
-	cout << Aq[i] << ",";
+    cout << endl << endl;
+
+    dim3 gridB;
+    dim3 blockB;
+
+    if (nt<64) {
+        gridB.x = nt;
+        gridB.y = nt;
+        blockB.x = 1;
+        blockB.y = 1;
+    } else {
+	gridB.x = 64;
+	gridB.y = 64;
+	blockB.x = (int)(n/64);
+	blockB.y = (int)(n/64);
     }
-    double fr = frexp(Aq[0],&exp0);
-    for (int i=1;i<pp;i++) {
-	double fr = frexp(Aq[i],&exp1);
-	cout << exp1-exp0 << endl;
-	exp0 = exp1;
+
+    bigB_dvc<<<gridB,blockB>>>(B,BB,nt,pt);
+    
+    vector<double> BB_out = zeros(nt,nt,pt*pt);
+    cudaMemcpy(BB_out.data(),BB,(long long int)nt*(long long int)nt*(long long int)pt*(long long int)pt*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
+    for (int i=0;i<nt*nt*pt*pt;i++) {
+	cout << BB_out[i] << " ";
+	if (i%(nt*pt)==nt*pt-1) {
+	    cout << endl;
+	}
+    }
+    vector<double> BB_real = bigB2(B_src,nt,pt);
+    cout << endl;
+    for (int i=0;i<nt*nt*pt*pt;i++) {                                                                                           cout << BB_real[i] << " ";
+        if (i%(nt*pt)==nt*pt-1) {                                                                                                   cout << endl;
+        }
     }
     */
-    
     return 0;
 }
