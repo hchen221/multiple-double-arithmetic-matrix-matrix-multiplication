@@ -64,14 +64,10 @@ __global__ void bigB_dvc(double* B,double* BB,int n,int p) {
         __syncthreads();
     }
     for (int i=0;i<p;i++) {
-	for (int j=0;j<p;j++) {
-	    if (j<=i) {
-	        BB[c*n*p*p+i*n*p+r*p+j] = b[r_loc*n_frag*p+c_loc*p+(i-j)];
-	    } else {
-		BB[c*n*p*p+i*n*p+r*p+j] = 0;
-	    }
-	    __syncthreads();
+	for (int j=0;j<=i;j++) {
+	    BB[c*n*p*p+i*n*p+r*p+j] = b[r_loc*n_frag*p+c_loc*p+(i-j)];
 	}
+    	__syncthreads();
     }
 }
 
@@ -80,14 +76,10 @@ __global__ void bigB_dvc_sharednt(double* B,double* BB,int n,int p) {
     int c = blockDim.y*blockIdx.y+threadIdx.y;
     printf("B[%i,%i]_0=%f\n",r,c,B[r*n*p+c*p]);
     for (int i=0;i<p;i++) {
-        for (int j=0;j<p;j++) {
-            if (j<=i) {
-                BB[c*n*p*p+i*n*p+r*p+j] = B[r*n*p+c*p+(i-j)];
-            } else {
-		BB[c*n*p*p+i*n*p+r*p+j] = 0;
-	    }
-            __syncthreads();
-        }
+        for (int j=0;j<=i;j++) {
+            BB[c*n*p*p+i*n*p+r*p+j] = B[r*n*p+c*p+(i-j)];
+	}
+	__syncthreads();
     }
 }
 /*bigB_dvc(B,n,p) takes an nxn matrix of p-double entries B and returns the following
@@ -137,8 +129,16 @@ __global__ void renormA(double* A,int n,int p) {
     }
 }
 
+__global__ void simple_matmul(double* A,double* B,double* C,int m,int n,int k) {
+    int r = blockIdx.x*blockDim.x+threadIdx.x;
+    int c = blockIdx.y*blockDim.y+threadIdx.y;
+    for (int i=0;i<k;i++) {
+	C[r*n+c] += A[r*k+i]*B[i*n+c];
+    }
+}
+
 __global__ void inv_upper_triangular(double* U,double* X,double* B, int n, int m) {
-    int j = blockIdx.y*blockDim.y+threadIdx.y;
+    int j = blockIdx.x*blockDim.x+threadIdx.x; //1D threading on columns
     for (int i=n-1;i<=0;i--) {
 	X[i*m+j] = B[i*m+j];
 	for (int k=n-1;k<0;k--) {
@@ -166,8 +166,17 @@ __global__ void invert_diagonals(double* U,double* Unt, int n) {
     }
 }
 
-__global__ void back_subs(double* U, double* X, double* B, int blockSize, int n) {
-    ;
+__global__ void back_subs(double* U, double* X, double* B, int n_blox, int n) {
+    int col = blockIdx.x*blockDim.x+threadIdx.x; //1D threading on columns
+    extern __shared__ double u[];
+    int num_blox = n/n_blox;
+    for (int i=num_blox-1;i>=0;i--) {
+	for (int r=0;r<n_blox;r++) {
+	    for (int c=0;c<n_blox;c++) {
+		u[r*n_blox+c] = U[i*n*n_blox+r*n+i*n_blox*n_blox+c];
+	    }
+	}
+    }
 }
 
 __global__ void ddmm(double *A,double *B,double *C,int n)

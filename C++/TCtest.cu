@@ -18,6 +18,28 @@ using namespace std;
 #define N_GLOBAL n*pp
 #define K_GLOBAL n*pp
 
+#define nt 4
+#define pt 2
+#define nfragt 2
+
+__global__ void bigB_dvc_main(double* B,double* BB) { // static shared memory
+    int r = blockDim.x*blockIdx.x+threadIdx.x;
+    int c = blockDim.y*blockIdx.y+threadIdx.y;
+    int r_loc = threadIdx.x;
+    int c_loc = threadIdx.y;
+    __shared__ double b[nfragt*nfragt*pt];
+    for (int i=0;i<pt;i++) {
+	b[r_loc*nfragt*pt+c_loc*pt+i] = B[r*nt*pt+c*pt+i];
+        __syncthreads();
+    }
+    for (int i=0;i<pt;i++) {
+	for (int j=0;j<=i;j++) {
+	    BB[c*nt*pt*pt+i*nt*pt+r*pt+j] = b[r_loc*nfragt*pt+c_loc*pt+(i-j)];
+	}
+    	__syncthreads();	
+    }
+}
+
 __global__ void matmul(double *a, double *b, double *c) {
     int warpM = (blockIdx.x * blockDim.x + threadIdx.x) / warpSize;
     int warpN = (blockIdx.y * blockDim.y + threadIdx.y);
@@ -191,16 +213,16 @@ void test(int expmin,int expmax) {
 }
 
 int main() {
-    
+    /*
     int seed = time(NULL);
     srand(seed);
     test(0,0);
+    */
     
-    /*
     double* B;
     double* BB;
-    int nt = 2;
-    int pt = 4;
+    //int nt = 2;
+    //int pt = 4;
     vector<double> B_src = mat(nt,pt,0,0);
     cudaMalloc((void**)&B,(long long int)nt*(long long int)nt*(long long int)pt*(long long int)sizeof(double));
     cudaMemcpy(B,B_src.data(),(long long int)nt*(long long int)nt*(long long int)pt*(long long int)sizeof(double),cudaMemcpyHostToDevice);
@@ -225,7 +247,7 @@ int main() {
 	blockB.y = (int)(n/64);
     }
 
-    bigB_dvc<<<gridB,blockB>>>(B,BB,nt,pt);
+    bigB_dvc_main<<<gridB,blockB>>>(B,BB);
     
     vector<double> BB_out = zeros(nt,nt,pt*pt);
     cudaMemcpy(BB_out.data(),BB,(long long int)nt*(long long int)nt*(long long int)pt*(long long int)pt*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
@@ -241,6 +263,6 @@ int main() {
         if (i%(nt*pt)==nt*pt-1) {                                                                                                   cout << endl;
         }
     }
-    */
+    
     return 0;
 }
