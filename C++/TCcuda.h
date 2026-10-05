@@ -54,9 +54,14 @@ __global__ void renormbigA(double* A,int n,int p);
 /*renormA takes an nxn matrix A of p-doubles and runs on nxn threads in a 1x1 block to renormalize into non overlapping p-doubles component wise*/
 __global__ void renormA(double* A,int n,int p);
 
+/*simple_matmul(A,B,C,m,n,k) is a simple matrix multiplication kernel AB=C where C is mxn, all matrices row major*/
+__global__ void simple_matmul(double* A,double* B,double* C,int m,int n,int k);
+
 /*inv_upper_triangular(U,X,B,n,m) takes an upper triangular matrix U where U is nxn and solves UX=B for X where X,B are nxm*/
 __global__ void inv_upper_triangular(double* U,double* X,double* B, int n, int m);
 
+/*invert_diagonals(U,Unt,n) takes an nxn upper triangular matrix U and stores the inverses of the intermediate blocks along the diagonals*/
+__global__ void invert_diagonals(double* U,double* Unt, int n,int blockSize);
 /*matmulTCnt(A,B,n,p) takes nxn matrices A,B of p-doubles and computes the product C, done with regular CUDA cores, with helper functions ddmm,qdmm,odmm,hdmm depending on p, executed on nlen x nlen blocks with block size nfrag x nfrag where nfrag*nlen=n. The kernels are adapted from ddmm_kernels.cu in PHCpack*/
 __global__ void ddmm(double *A,double *B,double *C,int n);
 __global__ void qdmm(double *A,double *B,double *C,int n);

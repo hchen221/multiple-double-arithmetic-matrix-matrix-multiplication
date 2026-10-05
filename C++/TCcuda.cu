@@ -151,16 +151,19 @@ __global__ void inv_upper_triangular(double* U,double* X,double* B, int n, int m
 }
 // Compute diagonal block inverse in parallel first then use it as part of a bigger back substitution. splitting extends number of columns. Look at leastsquares.pdf
 
-__global__ void invert_diagonals(double* U,double* Unt, int n) {
-    int I = blockIdx.x;
-    for (int i=(I+1)*blockDim.x-1;i<=I*blockDim.x;i--) {
-	for (int j=(I+1)*blockDim.x-1;j<I*blockDim.x;j--) {
+__global__ void invert_diagonals(double* U,double* Unt, int n, int blockSize) {
+    int I = threadIdx.x;
+    //printf("Thread %i, range {%i,..,%i}\n",I,I*blockSize,(I+1)*blockSize-1);
+    for (int i=(I+1)*blockSize-1;i>=I*blockSize;i--) {
+	for (int j=(I+1)*blockSize-1;j>=I*blockSize;j--) {
 	    Unt[i*n+j] = static_cast<double>(i==j);
-	    for (int k=(I+1)*blockDim.x-1;k<I*blockDim.x;k--) {
+            //printf("    Unt[%i,%i]=%f=%f\n",i,j,Unt[i*n+j],static_cast<double>(i==j));	    
+	    for (int k=(I+1)*blockSize-1;k>I*blockSize;k--) {
 		Unt[i*n+j] -= U[i*n+k]*Unt[k*n+j];
 		__syncthreads();
 	    }
 	    Unt[i*n+j] /= U[i*n+i];
+	    
 	}
 	__syncthreads();
     }
