@@ -294,7 +294,7 @@ int main() {
     Gdim.x = 1;
     Gdim.y = 1;
     Bdim.x = gd;
-    Bdim.y = 1;
+    Bdim.y = bd;
     //cout << "Tile " << nd << "x" << nd << " into " << bd << "x" << bd << " size blocks\n\n";
     invert_diagonals<<<Gdim,Bdim>>>(U_d,Unt_d,nd,bd);
     cudaMemcpy(Unt.data(),Unt_d,(long long int)nd*(long long int)nd*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
@@ -307,24 +307,24 @@ int main() {
     }
     cout << endl << endl;
 
-    vector<double> I_probably = mat(nd,1,0,0);
+    vector<double> I_allegedly = zeros(nd,nd,1);
     double* I_device;
     cudaMalloc((void**)&I_device,(long long int)nd*(long long int)nd*(long long int)sizeof(double));
-    cudaMemcpy(I_device,I_probably.data(),(long long int)nd*(long long int)nd*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMemcpy(I_device,I_allegedly.data(),(long long int)nd*(long long int)nd*(long long int)sizeof(double),cudaMemcpyHostToDevice);
     dim3 Gdim_mat;
     dim3 Bdim_mat;
     Gdim_mat.x = gd;
     Gdim_mat.y = gd;
     Bdim_mat.x = bd;
     Bdim_mat.y = bd;
-    simple_matmul<<<Gdim_mat,Bdim_mat>>>(Unt_d,U_d,I_device,nd,nd,nd);
-    cudaMemcpy(I_probably.data(),I_device,(long long int)nd*(long long int)nd*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
-    cout << "I (probably) =";
+    verify_diagonals<<<Gdim_mat,Bdim_mat>>>(Unt_d,U_d,I_device,nd);
+    cudaMemcpy(I_allegedly.data(),I_device,(long long int)nd*(long long int)nd*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
+    cout << "I (allegedly) =";
     for (int i=0;i<nd*nd;i++) {
         if (i%nd==0) {
             cout << endl;
         }
-        cout << I_probably[i] << " ";
+        cout << I_allegedly[i] << " ";
     }
     cout << endl << endl;
     return 0;

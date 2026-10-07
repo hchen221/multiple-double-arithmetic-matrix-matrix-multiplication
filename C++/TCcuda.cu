@@ -153,19 +153,29 @@ __global__ void inv_upper_triangular(double* U,double* X,double* B, int n, int m
 
 __global__ void invert_diagonals(double* U,double* Unt, int n, int blockSize) {
     int I = threadIdx.x;
+    int j = I*blockSize+threadIdx.y;
     //printf("Thread %i, range {%i,..,%i}\n",I,I*blockSize,(I+1)*blockSize-1);
     for (int i=(I+1)*blockSize-1;i>=I*blockSize;i--) {
-	for (int j=(I+1)*blockSize-1;j>=I*blockSize;j--) {
-	    Unt[i*n+j] = static_cast<double>(i==j);
-            //printf("    Unt[%i,%i]=%f=%f\n",i,j,Unt[i*n+j],static_cast<double>(i==j));	    
-	    for (int k=(I+1)*blockSize-1;k>I*blockSize;k--) {
-		Unt[i*n+j] -= U[i*n+k]*Unt[k*n+j];
-		__syncthreads();
-	    }
-	    Unt[i*n+j] /= U[i*n+i];
-	    
+	Unt[i*n+j] = static_cast<double>(i==j);
+        //printf("    Unt[%i,%i]=%f=%f\n",i,j,Unt[i*n+j],static_cast<double>(i==j));	    
+	for (int k=(I+1)*blockSize-1;k>=I*blockSize;k--) {
+	    Unt[i*n+j] -= U[i*n+k]*Unt[k*n+j];
+	    __syncthreads();
 	}
-	__syncthreads();
+	Unt[i*n+j] /= U[i*n+i];
+    }
+    __syncthreads();
+}
+
+__global__ void verify_diagonals(double* U,double* Unt, double* I_allegedly, int n) {
+    if (blockIdx.x==blockIdx.y) {
+        int blockSize = blockDim.x; // assume blockDim.x==blockDim.y
+        int r = blockIdx.x*blockDim.x+threadIdx.x;
+        int c = blockIdx.y*blockDim.y+threadIdx.y;
+        for (int i=blockIdx.x*blockSize;i<(blockIdx.x+1)*blockSize;i++) {
+	    I_allegedly[r*n+c] += U[r*n+i]+Unt[i*n+c];
+        }
+        __syncthreads();
     }
 }
 

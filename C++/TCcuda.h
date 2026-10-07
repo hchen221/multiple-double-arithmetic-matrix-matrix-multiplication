@@ -62,6 +62,8 @@ __global__ void inv_upper_triangular(double* U,double* X,double* B, int n, int m
 
 /*invert_diagonals(U,Unt,n) takes an nxn upper triangular matrix U and stores the inverses of the intermediate blocks along the diagonals*/
 __global__ void invert_diagonals(double* U,double* Unt, int n,int blockSize);
+/*verify_diagonals(U,Unt,I_probably,n) takes nxn upper triangular matrices U and Unt where allegedly on the diagonal blocks Unt is the inverse of U. It multiplies submatrices along the block diagonals and stores the results in I_allegedly to double check accuracy of U and Unt*/
+__global__ void verify_diagonals(double* U,double* Unt, double* I_allegedly, int n);
 /*matmulTCnt(A,B,n,p) takes nxn matrices A,B of p-doubles and computes the product C, done with regular CUDA cores, with helper functions ddmm,qdmm,odmm,hdmm depending on p, executed on nlen x nlen blocks with block size nfrag x nfrag where nfrag*nlen=n. The kernels are adapted from ddmm_kernels.cu in PHCpack*/
 __global__ void ddmm(double *A,double *B,double *C,int n);
 __global__ void qdmm(double *A,double *B,double *C,int n);
