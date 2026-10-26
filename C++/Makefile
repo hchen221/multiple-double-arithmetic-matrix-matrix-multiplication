@@ -36,8 +36,30 @@ mini:
 	nvcc -ccbin=$(GPP) -arch=sm_80 -c hexa_double_functions.cu
 	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCcuda.cu
 	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCtest_mini.cu
-	nvcc -ccbin=$(GPP) floatybits.o TCcuda.o TCtest.o -o minitest
+	nvcc -ccbin=$(GPP) floatybits.o TCcuda.o TCtest_mini.o -o minitest
 	./minitest
+
+invdiag:
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c floatybits.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c double_double_functions.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c quad_double_functions.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c octo_double_functions.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c hexa_double_functions.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCcuda.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCtest_inv_diag.cu
+	nvcc -ccbin=$(GPP) floatybits.o TCcuda.o TCtest_mini.o -o invdiagtest
+	./invdiagtest
+
+dvcconv:
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c floatybits.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c double_double_functions.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c quad_double_functions.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c octo_double_functions.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c hexa_double_functions.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCcuda.cu
+	nvcc -ccbin=$(GPP) -arch=sm_80 -c TCtest_dvc_conv.cu
+	nvcc -ccbin=$(GPP) floatybits.o TCcuda.o TCtest_dvc_conv.o -o dvcconvtest
+	./dvcconvtest
 
 nh:
 	nvcc -ccbin=$(GPP) -arch=sm_80 -c floatybits.cu

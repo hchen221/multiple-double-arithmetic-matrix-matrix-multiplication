@@ -18,28 +18,6 @@ using namespace std;
 #define N_GLOBAL n*pp
 #define K_GLOBAL n*pp
 
-#define nt 4
-#define pt 2
-#define nfragt 2
-
-__global__ void bigB_dvc_main(double* B,double* BB) { // static shared memory
-    int r = blockDim.x*blockIdx.x+threadIdx.x;
-    int c = blockDim.y*blockIdx.y+threadIdx.y;
-    int r_loc = threadIdx.x;
-    int c_loc = threadIdx.y;
-    __shared__ double b[nfragt*nfragt*pt];
-    for (int i=0;i<pt;i++) {
-	b[r_loc*nfragt*pt+c_loc*pt+i] = B[r*nt*pt+c*pt+i];
-        __syncthreads();
-    }
-    for (int i=0;i<pt;i++) {
-	for (int j=0;j<=i;j++) {
-	    BB[c*nt*pt*pt+i*nt*pt+r*pt+j] = b[r_loc*nfragt*pt+c_loc*pt+(i-j)];
-	}
-    	__syncthreads();	
-    }
-}
-
 __global__ void matmul(double *a, double *b, double *c) {
     int warpM = (blockIdx.x * blockDim.x + threadIdx.x) / warpSize;
     int warpN = (blockIdx.y * blockDim.y + threadIdx.y);
@@ -66,7 +44,7 @@ __global__ void matmul(double *a, double *b, double *c) {
 
     wmma::store_matrix_sync(c+cCol+cRow*N_GLOBAL,c_frag,N_GLOBAL,wmma::mem_row_major);
 }
-
+/*expmin and expman control the exponent range of the random numbers*/
 void test(int expmin,int expmax) {
     vector<double> A = mat(n,p,expmin,expmax);
     vector<double> B = mat(n,p,expmin,expmax);
@@ -83,11 +61,11 @@ void test(int expmin,int expmax) {
         Bq = split8pd(B,p);
     }
     cout << "A,B in R^{" << n << "x" << n << "}, entries of "<< p << "-doubles\n\n";
-    
+
     vector<double> C1q = zeros(n,n,pp);
 
     cout << "Setup? Done." << endl;
-    
+
     double d0 = (double)clock();
 
     double* A_d;
@@ -100,7 +78,7 @@ void test(int expmin,int expmax) {
     cudaMalloc((void**)&B_d,(long long int)M_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double));
     cudaMemcpy(B_d,Bq.data(),(long long int)M_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double),cudaMemcpyHostToDevice);
     cudaMalloc((void**)&BB_d,(long long int)K_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double));
-    
+
     dim3 gridB;
     int nB = n/64;
     gridB.x = nB;
@@ -110,8 +88,10 @@ void test(int expmin,int expmax) {
     blockB.y = 64;
     bigB_dvc<<<gridB,blockB>>>(B_d,BB_d,n,pp);
     
+    /*This program currently workn't when using bigB_dvc. For accuracy, have BB_d copy memory from bigB2(B,n,pp) instead*/
+
     //vector<double> BB_h = bigB2(Bq,n,pp);
-    //cudaMemcpy(BB_d,BB_h.data(),(long long int)K_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double),cudaMemcpyHostToDevice); 
+    //cudaMemcpy(BB_d,BB_h.data(),(long long int)K_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double),cudaMemcpyHostToDevice);
     cudaMalloc((void**)&C_d,(long long int)M_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double));
     cudaMemcpy(C_d,C1q.data(),(long long int)M_GLOBAL*(long long int)N_GLOBAL*(long long int)sizeof(double),cudaMemcpyHostToDevice);
 
@@ -125,9 +105,9 @@ void test(int expmin,int expmax) {
 
     gridDim.x = (M_GLOBAL + (M*blockDim.x/32-1))/(M*blockDim.x/32);
     gridDim.y = (N_GLOBAL + N*blockDim.y-1)/(N*blockDim.y);
-    
+
     float t_raw;
-    cudaEvent_t T0,Tf;           // to measure time spent by kernels 
+    cudaEvent_t T0,Tf;           // to measure time spent by kernels
     cudaEventCreate(&T0);
     cudaEventCreate(&Tf);
     cudaEventRecord(T0);
@@ -184,7 +164,7 @@ void test(int expmin,int expmax) {
     f_CUDA = mul_ops+add_ops;
 
     cout << "CUDA? Finished. Performance? " << f_CUDA/t_CUDA << ". CPU time? " << (hf-h0)/(double)CLOCKS_PER_SEC << endl;
-    
+
     cout << "TC C[1,1]? (";
     for (int i=0;i<p;i++) {
         cout << C1[i];
@@ -202,7 +182,7 @@ void test(int expmin,int expmax) {
 	}
     }
     cout << ")" << endl;
-    
+
     double max_err = 0;
     for (int i=0;i<n*n*p;i++) {
 	if (max_err<abs(C1[i]-C2[i])) {
@@ -212,208 +192,7 @@ void test(int expmin,int expmax) {
     cout << "Max error? " << max_err << endl;
 }
 
-void test_dvc_conv() {
-    double* B;
-    double* BB;
-    //int nt = 2;
-    //int pt = 4;
-    vector<double> B_src = mat(nt,pt,0,0);
-    cudaMalloc((void**)&B,(long long int)nt*(long long int)nt*(long long int)pt*(long long int)sizeof(double));
-    cudaMemcpy(B,B_src.data(),(long long int)nt*(long long int)nt*(long long int)pt*(long long int)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&BB,(long long int)nt*(long long int)nt*(long long int)pt*(long long int)pt*(long long int)sizeof(double));
-    for (int i=0;i<pt;i++) {
-        cout << B+i << " ";
-    }
-    cout << endl << endl;
-
-    dim3 gridB;
-    dim3 blockB;
-
-    if (nt<64) {
-        gridB.x = nt;
-        gridB.y = nt;
-        blockB.x = 1;
-        blockB.y = 1;
-    } else {
-        gridB.x = 64;
-        gridB.y = 64;
-        blockB.x = (int)(n/64);
-        blockB.y = (int)(n/64);
-    }
-
-    bigB_dvc_main<<<gridB,blockB>>>(B,BB);
-
-    vector<double> BB_out = zeros(nt,nt,pt*pt);
-    cudaMemcpy(BB_out.data(),BB,(long long int)nt*(long long int)nt*(long long int)pt*(long long int)pt*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
-    for (int i=0;i<nt*nt*pt*pt;i++) {
-        cout << BB_out[i] << " ";
-        if (i%(nt*pt)==nt*pt-1) {
-            cout << endl;
-        }
-    }
-    vector<double> BB_real = bigB2(B_src,nt,pt);
-    cout << endl;
-    for (int i=0;i<nt*nt*pt*pt;i++) {                                                                                           cout << BB_real[i] << " ";
-        if (i%(nt*pt)==nt*pt-1) {                                                                                                   cout << endl;
-        }
-    }
-}
-
-#define nd 16
-#define bd 4
-
-void test_diagonal_inv() {
-    vector<double> U = mat(nd,1,0,0);
-    for (int i=1;i<nd;i++) {
-        for (int j=0;j<i;j++) {
-            U[i*nd+j] = 0;
-        }
-    }
-    cout << "U =";
-    for (int i=0;i<nd*nd;i++) {
-        if (i%nd==0) {
-            cout << endl;
-        }
-        cout << U[i] << " ";
-    }
-    cout << endl << endl;
-    vector<double> Unt = zeros(nd,nd,1);
-    double* U_d;
-    cudaMalloc((void**)&U_d,(long long int)nd*(long long int)nd*(long long int)sizeof(double));
-    cudaMemcpy(U_d,U.data(),(long long int)nd*(long long int)nd*(long long int)sizeof(double),cudaMemcpyHostToDevice);
-    double* Unt_d;
-    cudaMalloc((void**)&Unt_d,(long long int)nd*(long long int)nd*(long long int)sizeof(double));
-    cudaMemcpy(Unt_d,Unt.data(),(long long int)nd*(long long int)nd*(long long int)sizeof(double),cudaMemcpyHostToDevice);
-    int gd = nd/bd;
-    dim3 Gdim;
-    dim3 Bdim;
-    Gdim.x = 1;
-    Gdim.y = 1;
-    Bdim.x = gd;
-    Bdim.y = bd;
-    //cout << "Tile " << nd << "x" << nd << " into " << bd << "x" << bd << " size blocks\n\n";
-    invert_diagonals<<<Gdim,Bdim>>>(U_d,Unt_d,nd,bd);
-    cudaMemcpy(Unt.data(),Unt_d,(long long int)nd*(long long int)nd*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
-    cout << "U^{-1} ="; 
-    for (int i=0;i<nd*nd;i++) {
-        if (i%nd==0) {
-            cout << endl;
-        }
-        cout << Unt[i] << " ";
-    }
-    cout << endl << endl;
-
-    vector<double> I_allegedly = zeros(nd,nd,1);
-    double* I_device;
-    cudaMalloc((void**)&I_device,(long long int)nd*(long long int)nd*(long long int)sizeof(double));
-    cudaMemcpy(I_device,I_allegedly.data(),(long long int)nd*(long long int)nd*(long long int)sizeof(double),cudaMemcpyHostToDevice);
-    dim3 Gdim_mat;
-    dim3 Bdim_mat;
-    Gdim_mat.x = gd;
-    Gdim_mat.y = gd;
-    Bdim_mat.x = bd;
-    Bdim_mat.y = bd;
-    verify_diagonals<<<Gdim_mat,Bdim_mat>>>(Unt_d,U_d,I_device,nd);
-    cudaMemcpy(I_allegedly.data(),I_device,(long long int)nd*(long long int)nd*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
-    cout << "I (allegedly) =";
-    for (int i=0;i<nd*nd;i++) {
-        if (i%nd==0) {
-            cout << endl;
-        }
-        cout << I_allegedly[i] << " ";
-    }
-    cout << endl << endl;
-}
-
-#define n_mini 16
-#define b_mini 4
-/*
-   matmul_mini is a basic Tensor Core matrix product AB=C where A,B,C are n_mini x n_mini matrices
-   b_mini is a block size to see if we can multiply only a subset of the matrix (i.e. the first upper b_mini x b_mini block)
-*/
-__global__ void matmul_mini(double *a, double *b, double *c) {
-    int warpM = (blockIdx.x * blockDim.x + threadIdx.x) / warpSize;
-    int warpN = (blockIdx.y * blockDim.y + threadIdx.y);
-
-    wmma::fragment<wmma::matrix_a, M, N, K, double, wmma::row_major> a_frag;
-    wmma::fragment<wmma::matrix_b, M, N, K, double, wmma::col_major> b_frag;
-    wmma::fragment<wmma::accumulator, M, N, K, double> c_frag;
-
-    int cCol = warpN * N;
-    int cRow = warpM * M;
-
-    wmma::load_matrix_sync(c_frag,c+cCol+cRow*n_mini,n_mini,wmma::mem_row_major);
-    //The range on k determines which columns are multiplied. How do you restrict rows?
-    for (int k=0;k<b_mini;k+=K) {
-        int aCol = k;
-        int aRow = warpM * M;
-        int bCol = warpN * N;
-        int bRow = k;
-        wmma::load_matrix_sync(a_frag, a + aCol + aRow * n_mini, n_mini);
-        wmma::load_matrix_sync(b_frag, b + bRow + bCol * n_mini, n_mini);
-
-        wmma::mma_sync(c_frag, a_frag, b_frag, c_frag);
-    }
-
-    wmma::store_matrix_sync(c+cCol+cRow*n_mini,c_frag,n_mini,wmma::mem_row_major);
-}
-
-void test_mini() {
-    vector<double> A = ones(n_mini,n_mini,1);
-    vector<double> B = zeros(n_mini,n_mini,1);
-    for (int i=0;i<n_mini;i++) {
-        B[i*n_mini+i] = 2;
-    }
-    cout << "A=" << endl;
-    for (int i=0;i<n_mini*n_mini;i++) {
-        if (i%n_mini==0) {
-            cout << endl;
-        }
-        cout << A[i] << " ";
-    }
-    cout << endl << endl;
-    cout << "B=" << endl;
-    for (int i=0;i<n_mini*n_mini;i++) {
-        if (i%n_mini==0) {
-            cout << endl;
-        }
-        cout << B[i] << " ";
-    }
-    cout << endl << endl;
-    vector<double> C = zeros(n_mini,n_mini,1);
-    double* A_d;
-    double* B_d;
-    double* C_d;
-    cudaMalloc((void**)&A_d,(long long int)n_mini*(long long int)n_mini*(long long int)sizeof(double));
-    cudaMemcpy(A_d,A.data(),(long long int)n_mini*(long long int)n_mini*(long long int)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&B_d,(long long int)n_mini*(long long int)n_mini*(long long int)sizeof(double));
-    cudaMemcpy(B_d,B.data(),(long long int)n_mini*(long long int)n_mini*(long long int)sizeof(double),cudaMemcpyHostToDevice);
-    cudaMalloc((void**)&C_d,(long long int)n_mini*(long long int)n_mini*(long long int)sizeof(double));
-    cudaMemcpy(C_d,C.data(),(long long int)n_mini*(long long int)n_mini*(long long int)sizeof(double),cudaMemcpyHostToDevice);
-
-    dim3 gridDim;
-    dim3 blockDim;
-
-    // blockDim.x must be a multple of warpSize 128x4 means we have
-    // 16 warps and a block computes a 64x64 output tile
-    blockDim.x = 128;
-    blockDim.y = 4;
-
-    gridDim.x = (n_mini + (M*blockDim.x/32-1))/(M*blockDim.x/32);
-    gridDim.y = (n_mini + N*blockDim.y-1)/(N*blockDim.y);
-
-    matmul_mini<<<gridDim,blockDim>>>(A_d,B_d,C_d);
-    cudaMemcpy(C.data(),C_d,(long long int)n_mini*(long long int)n_mini*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
-    cout << "C=" << endl;
-    for (int i=0;i<n_mini*n_mini;i++) {
-        if (i%n_mini==0) {
-            cout << endl;
-        }
-        cout << C[i] << " ";
-    }
-}
-
 int main() {
-    test_mini();
+    test(0,0);
     return 0;
 }
