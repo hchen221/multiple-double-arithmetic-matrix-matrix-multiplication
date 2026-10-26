@@ -327,7 +327,10 @@ void test_diagonal_inv() {
 
 #define n_mini 16
 #define b_mini 4
-
+/*
+   matmul_mini is a basic Tensor Core matrix product AB=C where A,B,C are n_mini x n_mini matrices
+   b_mini is a block size to see if we can multiply only a subset of the matrix (i.e. the first upper b_mini x b_mini block)
+*/
 __global__ void matmul_mini(double *a, double *b, double *c) {
     int warpM = (blockIdx.x * blockDim.x + threadIdx.x) / warpSize;
     int warpN = (blockIdx.y * blockDim.y + threadIdx.y);
@@ -340,7 +343,7 @@ __global__ void matmul_mini(double *a, double *b, double *c) {
     int cRow = warpM * M;
 
     wmma::load_matrix_sync(c_frag,c+cCol+cRow*n_mini,n_mini,wmma::mem_row_major);
-    // The range on k determines which columns are multiplied. How do you restrict rows?
+    //The range on k determines which columns are multiplied. How do you restrict rows?
     for (int k=0;k<b_mini;k+=K) {
         int aCol = k;
         int aRow = warpM * M;
@@ -352,7 +355,7 @@ __global__ void matmul_mini(double *a, double *b, double *c) {
         wmma::mma_sync(c_frag, a_frag, b_frag, c_frag);
     }
 
-    wmma::store_matrix_sync(c+cCol+cRow*nd,c_frag,n_mini,wmma::mem_row_major);
+    wmma::store_matrix_sync(c+cCol+cRow*n_mini,c_frag,n_mini,wmma::mem_row_major);
 }
 
 void test_mini() {
