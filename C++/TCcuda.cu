@@ -31,6 +31,14 @@ vector<double> zeros(int m,int n, int p) {
     return A;
 }
 
+vector<double> ones(int m,int n, int p) {
+	vector<double> A;
+	for (int i=0;i<m*n*p;i++) {
+		A.push_back(ldexp(1,-52*(i%p)));
+	}
+	return A;
+}
+
 vector<double> part(vector<double> x,int p,int i) {
     vector<double> xi;
     for (int j=i;j<x.size();j+=p) {

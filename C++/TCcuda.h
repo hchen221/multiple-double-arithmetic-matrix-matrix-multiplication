@@ -23,9 +23,12 @@ mat(n,p) returns a flattened nxn matrix of random p doubles
 vector<double> mat(int n, int p, int expmin=0, int expmax=0);
 
 /*
-zeros(m,n,p) returns a matrix of all 0's
+zeros(m,n,p) returns an nxm matrix of all 0's as p-doubles
 */
 vector<double> zeros(int m,int n, int p);
+
+/*ones(m,n,p) returns an nxm matrix of all 1's as p-doubles*/
+vector<double> ones(int m,int n, int p);
 
 /*
 part(x,p,i) takes a vector of p-doubles x and returns the ith part component wise

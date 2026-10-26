@@ -212,13 +212,7 @@ void test(int expmin,int expmax) {
     cout << "Max error? " << max_err << endl;
 }
 
-int main() {
-    /*
-    int seed = time(NULL);
-    srand(seed);
-    test(0,0);
-    */
-    /*
+void test_dvc_conv() {
     double* B;
     double* BB;
     //int nt = 2;
@@ -228,7 +222,7 @@ int main() {
     cudaMemcpy(B,B_src.data(),(long long int)nt*(long long int)nt*(long long int)pt*(long long int)sizeof(double),cudaMemcpyHostToDevice);
     cudaMalloc((void**)&BB,(long long int)nt*(long long int)nt*(long long int)pt*(long long int)pt*(long long int)sizeof(double));
     for (int i=0;i<pt;i++) {
-	cout << B+i << " ";
+        cout << B+i << " ";
     }
     cout << endl << endl;
 
@@ -241,21 +235,21 @@ int main() {
         blockB.x = 1;
         blockB.y = 1;
     } else {
-	gridB.x = 64;
-	gridB.y = 64;
-	blockB.x = (int)(n/64);
-	blockB.y = (int)(n/64);
+        gridB.x = 64;
+        gridB.y = 64;
+        blockB.x = (int)(n/64);
+        blockB.y = (int)(n/64);
     }
 
     bigB_dvc_main<<<gridB,blockB>>>(B,BB);
-    
+
     vector<double> BB_out = zeros(nt,nt,pt*pt);
     cudaMemcpy(BB_out.data(),BB,(long long int)nt*(long long int)nt*(long long int)pt*(long long int)pt*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
     for (int i=0;i<nt*nt*pt*pt;i++) {
-	cout << BB_out[i] << " ";
-	if (i%(nt*pt)==nt*pt-1) {
-	    cout << endl;
-	}
+        cout << BB_out[i] << " ";
+        if (i%(nt*pt)==nt*pt-1) {
+            cout << endl;
+        }
     }
     vector<double> BB_real = bigB2(B_src,nt,pt);
     cout << endl;
@@ -263,22 +257,24 @@ int main() {
         if (i%(nt*pt)==nt*pt-1) {                                                                                                   cout << endl;
         }
     }
-    */
+}
 
-    int nd = 8;
-    int bd = 2;
+#define nd 16
+#define bd 4
+
+void test_diagonal_inv() {
     vector<double> U = mat(nd,1,0,0);
     for (int i=1;i<nd;i++) {
-	for (int j=0;j<i;j++) {
-	    U[i*nd+j] = 0;
-	}
+        for (int j=0;j<i;j++) {
+            U[i*nd+j] = 0;
+        }
     }
     cout << "U =";
     for (int i=0;i<nd*nd;i++) {
-	if (i%nd==0) {
-	    cout << endl;
-	}
-	cout << U[i] << " ";
+        if (i%nd==0) {
+            cout << endl;
+        }
+        cout << U[i] << " ";
     }
     cout << endl << endl;
     vector<double> Unt = zeros(nd,nd,1);
@@ -298,7 +294,7 @@ int main() {
     //cout << "Tile " << nd << "x" << nd << " into " << bd << "x" << bd << " size blocks\n\n";
     invert_diagonals<<<Gdim,Bdim>>>(U_d,Unt_d,nd,bd);
     cudaMemcpy(Unt.data(),Unt_d,(long long int)nd*(long long int)nd*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
-    cout << "U^{-1} =";
+    cout << "U^{-1} ="; 
     for (int i=0;i<nd*nd;i++) {
         if (i%nd==0) {
             cout << endl;
@@ -327,5 +323,94 @@ int main() {
         cout << I_allegedly[i] << " ";
     }
     cout << endl << endl;
+}
+
+#define n_mini 16
+#define b_mini 4
+
+__global__ void matmul_mini(double *a, double *b, double *c) {
+    int warpM = (blockIdx.x * blockDim.x + threadIdx.x) / warpSize;
+    int warpN = (blockIdx.y * blockDim.y + threadIdx.y);
+
+    wmma::fragment<wmma::matrix_a, M, N, K, double, wmma::row_major> a_frag;
+    wmma::fragment<wmma::matrix_b, M, N, K, double, wmma::col_major> b_frag;
+    wmma::fragment<wmma::accumulator, M, N, K, double> c_frag;
+
+    int cCol = warpN * N;
+    int cRow = warpM * M;
+
+    wmma::load_matrix_sync(c_frag,c+cCol+cRow*n_mini,n_mini,wmma::mem_row_major);
+    // The range on k determines which columns are multiplied. How do you restrict rows?
+    for (int k=0;k<b_mini;k+=K) {
+        int aCol = k;
+        int aRow = warpM * M;
+        int bCol = warpN * N;
+        int bRow = k;
+        wmma::load_matrix_sync(a_frag, a + aCol + aRow * n_mini, n_mini);
+        wmma::load_matrix_sync(b_frag, b + bRow + bCol * n_mini, n_mini);
+
+        wmma::mma_sync(c_frag, a_frag, b_frag, c_frag);
+    }
+
+    wmma::store_matrix_sync(c+cCol+cRow*nd,c_frag,n_mini,wmma::mem_row_major);
+}
+
+void test_mini() {
+    vector<double> A = ones(n_mini,n_mini,1);
+    vector<double> B = zeros(n_mini,n_mini,1);
+    for (int i=0;i<n_mini;i++) {
+        B[i*n_mini+i] = 2;
+    }
+    cout << "A=" << endl;
+    for (int i=0;i<n_mini*n_mini;i++) {
+        if (i%n_mini==0) {
+            cout << endl;
+        }
+        cout << A[i] << " ";
+    }
+    cout << endl << endl;
+    cout << "B=" << endl;
+    for (int i=0;i<n_mini*n_mini;i++) {
+        if (i%n_mini==0) {
+            cout << endl;
+        }
+        cout << B[i] << " ";
+    }
+    cout << endl << endl;
+    vector<double> C = zeros(n_mini,n_mini,1);
+    double* A_d;
+    double* B_d;
+    double* C_d;
+    cudaMalloc((void**)&A_d,(long long int)n_mini*(long long int)n_mini*(long long int)sizeof(double));
+    cudaMemcpy(A_d,A.data(),(long long int)n_mini*(long long int)n_mini*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&B_d,(long long int)n_mini*(long long int)n_mini*(long long int)sizeof(double));
+    cudaMemcpy(B_d,B.data(),(long long int)n_mini*(long long int)n_mini*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&C_d,(long long int)n_mini*(long long int)n_mini*(long long int)sizeof(double));
+    cudaMemcpy(C_d,C.data(),(long long int)n_mini*(long long int)n_mini*(long long int)sizeof(double),cudaMemcpyHostToDevice);
+
+    dim3 gridDim;
+    dim3 blockDim;
+
+    // blockDim.x must be a multple of warpSize 128x4 means we have
+    // 16 warps and a block computes a 64x64 output tile
+    blockDim.x = 128;
+    blockDim.y = 4;
+
+    gridDim.x = (n_mini + (M*blockDim.x/32-1))/(M*blockDim.x/32);
+    gridDim.y = (n_mini + N*blockDim.y-1)/(N*blockDim.y);
+
+    matmul_mini<<<gridDim,blockDim>>>(A_d,B_d,C_d);
+    cudaMemcpy(C.data(),C_d,(long long int)n_mini*(long long int)n_mini*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
+    cout << "C=" << endl;
+    for (int i=0;i<n_mini*n_mini;i++) {
+        if (i%n_mini==0) {
+            cout << endl;
+        }
+        cout << C[i] << " ";
+    }
+}
+
+int main() {
+    test_mini();
     return 0;
 }
