@@ -13,8 +13,9 @@ using namespace std;
 /*
    matmul_mini is a basic Tensor Core matrix product AB=C where A,B,C are n_mini x n_mini matrices
    b_mini is a block size. We change the range of the parameters in the kernel (i.e. k) to see if we can multiply only a subset of the matrix (i.e. the first b_mini x b_mini block of C only)
+   row_start_idx indicates the (w.r.t. row major formatting) index of the start of the first row the user wants to multiply
 */
-__global__ void matmul_mini(double *a, double *b, double *c) {
+__global__ void matmul_mini(double *a, double *b, double *c,int row_start_idx) {
     int warpM = (blockIdx.x * blockDim.x + threadIdx.x) / warpSize;
     int warpN = (blockIdx.y * blockDim.y + threadIdx.y);
 
@@ -83,10 +84,10 @@ void test_mini() {
     blockDim.y = 4;
 
     // Does changing n_mini to b_mini here control the rows?
-    gridDim.x = (n_mini + (M*blockDim.x/32-1))/(M*blockDim.x/32);
-    gridDim.y = (n_mini + N*blockDim.y-1)/(N*blockDim.y);
+    gridDim.x = (b_mini + (M*blockDim.x/32-1))/(M*blockDim.x/32);
+    gridDim.y = (b_mini + N*blockDim.y-1)/(N*blockDim.y);
 
-    matmul_mini<<<gridDim,blockDim>>>(A_d,B_d,C_d);
+    matmul_mini<<<gridDim,blockDim>>>(A_d,B_d,C_d,0);
     cudaMemcpy(C.data(),C_d,(long long int)n_mini*(long long int)n_mini*(long long int)sizeof(double),cudaMemcpyDeviceToHost);
     cout << "C=" << endl;
     for (int i=0;i<n_mini*n_mini;i++) {
