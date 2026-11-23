@@ -8,8 +8,8 @@ using namespace std;
 #define N 8
 #define K 4
 
-#define n_mini 16
-#define b_mini 4
+#define n_mini 64
+#define b_mini 8
 /*
    matmul_mini is a basic Tensor Core matrix product AB=C where A,B,C are n_mini x n_mini matrices
    b_mini is a block size. We change the range of the parameters in the kernel (i.e. k) to see if we can multiply only a subset of the matrix (i.e. the first b_mini x b_mini block of C only)
@@ -54,8 +54,8 @@ __global__ void matmul_v2(double* a,double* b,double* c) {
 
     wmma::load_matrix_sync(c_frag,c+row*n_mini+col,n_mini,wmma::mem_row_major);
     for (int k=0;k<n_mini;k+=K) {
-	wmma::load_matrix_sync(a_frag,a+row*n_mini+k,n_mini);
-	wmma::load_matrix_sync(b_frag,b+col*n_mini+k,n_mini);
+	wmma::load_matrix_sync(a_frag,a+row*n_mini+k,M);
+	wmma::load_matrix_sync(b_frag,b+col*n_mini+k,N);
 	wmma::mma_sync(c_frag,a_frag,b_frag,c_frag);
     }
     wmma::store_matrix_sync(c+row*n_mini+col,c_frag,n_mini,wmma::mem_row_major);
